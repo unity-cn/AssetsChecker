@@ -73,17 +73,6 @@ public class TextureDetails
 			return 4;
 		case TextureFormat.DXT5:	// Compressed color with alpha channel texture format.
 			return 8;
-			/*
-			case TextureFormat.WiiI4:	// Wii texture format.
-			case TextureFormat.WiiI8:	// Wii texture format. Intensity 8 bit.
-			case TextureFormat.WiiIA4:	// Wii texture format. Intensity + Alpha 8 bit (4 + 4).
-			case TextureFormat.WiiIA8:	// Wii texture format. Intensity + Alpha 16 bit (8 + 8).
-			case TextureFormat.WiiRGB565:	// Wii texture format. RGB 16 bit (565).
-			case TextureFormat.WiiRGB5A3:	// Wii texture format. RGBA 16 bit (4443).
-			case TextureFormat.WiiRGBA8:	// Wii texture format. RGBA 32 bit (8888).
-			case TextureFormat.WiiCMPR:	//	 Compressed Wii texture format. 4 bits/texel, ~RGB8A1 (Outline alpha is not currently supported).
-				return 0;  //Not supported yet
-			*/
 		case TextureFormat.PVRTC_RGB2://	 PowerVR (iOS) 2 bits/pixel compressed color texture format.
 			return 2;
 		case TextureFormat.PVRTC_RGBA2://	 PowerVR (iOS) 2 bits/pixel compressed with alpha channel texture format
@@ -112,6 +101,8 @@ public class AssetsChecker : EditorWindow
 
     static int MinWidth = 480;
     string inputPath = "";
+
+    //默认按字母顺序排序
     int sortType = 1;
     int TotalTextureMemory = 0;
     Color defColor;
@@ -141,26 +132,30 @@ public class AssetsChecker : EditorWindow
     void OnGUI()
     {
         defColor = GUI.color;
-        GUILayout.Space(20);
+        Texture2D iconTexture = AssetPreview.GetMiniTypeThumbnail( typeof( Texture2D ) );
+	Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
+	Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
+	Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail( typeof( Shader ) );
+	Texture2D iconSound = AssetPreview.GetMiniTypeThumbnail( typeof( AudioClip ) );
+	Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail( typeof( MonoScript ) );
+        Texture2D iconSortAlpha = EditorGUIUtility.FindTexture("AlphabeticalSorting");
+        Texture2D iconSortDefault = EditorGUIUtility.FindTexture("DefaultSorting");
+        Texture2D iconSortDepend = EditorGUIUtility.FindTexture("CustomSorting");
+        Texture2D iconFolder = EditorGUIUtility.FindTexture("Folder Icon");
+        Texture2D iconRefresh = EditorGUIUtility.FindTexture("vcs_Refresh");
+
+        GUILayout.Space(15);
 
         GUILayout.BeginHorizontal();
-     
-        inputPath = EditorGUILayout.TextField((inputPath), GUILayout.Width(400), GUILayout.Height(30));
-        if(GUILayout.Button(("Check"), GUILayout.Width(50), GUILayout.Height(30)))
+        GUILayout.Space(20);
+        GUILayout.Box(iconFolder,GUILayout.Width(30), GUILayout.Height(30));
+        inputPath = EditorGUILayout.TextField(inputPath, GUILayout.Width(385), GUILayout.Height(30));
+        if(GUILayout.Button(iconRefresh, GUILayout.Width(30), GUILayout.Height(30)))
             checkResources();
         GUILayout.EndHorizontal();
         
         GUILayout.Space(10);
 
-        Texture2D iconTexture = AssetPreview.GetMiniTypeThumbnail( typeof( Texture2D ) );
-		Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-		Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
-		Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail( typeof( Shader ) );
-		Texture2D iconSound = AssetPreview.GetMiniTypeThumbnail( typeof( AudioClip ) );
-		Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail( typeof( MonoScript ) );
-        Texture2D iconSortAlpha = EditorGUIUtility.FindTexture("AlphabeticalSorting");
-        Texture2D iconSortDefault = EditorGUIUtility.FindTexture("DefaultSorting");
-        Texture2D iconSortDepend = EditorGUIUtility.FindTexture("CustomSorting");
 
         GUIContent [] guiObjs = 
 		{
@@ -180,27 +175,34 @@ public class AssetsChecker : EditorWindow
 		
 
 		GUILayout.BeginHorizontal();
+        GUILayout.Space(19);
 		//GUILayout.FlexibleSpace();
 		ActiveInspectType=(InspectType)GUILayout.Toolbar((int)ActiveInspectType,guiObjs,options);
+
+      
+
 		GUILayout.Box((
 			"Summary\n" +
 			"Materials: " + AllMaterials.Count + "\n" + 
             "Textures: " + AllTextures.Count + " - " + EditorUtility.FormatBytes(TotalTextureMemory)), 
-            GUILayout.Width(150), GUILayout.Height(50));
+            GUILayout.Width(150), GUILayout.Height(100));
         //GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
 
         GUILayout.Space(10);
 
         GUILayout.BeginHorizontal();
+        GUILayout.Space(20);
         if(GUILayout.Button(iconSortDefault, GUILayout.Width(30), GUILayout.Height(30))){
             sortType = 1;
             checkResources();
         }
+        
         if(GUILayout.Button(iconSortAlpha, GUILayout.Width(30), GUILayout.Height(30))){
             sortType = 2;
             checkResources();
         }
+        
         if(GUILayout.Button(iconSortDepend, GUILayout.Width(30), GUILayout.Height(30))){
             sortType = 3;
             checkResources();
@@ -248,12 +250,14 @@ public class AssetsChecker : EditorWindow
         
         foreach (MaterialDetails mat in AllMaterials){
             GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
             //Texture thumb = mat.material
             //AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
             GUILayout.Box(AssetPreview.GetAssetPreview(mat.material), GUILayout.Width(50), GUILayout.Height(50));
             //GUILayout.Box( thumb, GUILayout.Width(50), GUILayout.Height(50) );
             GUILayout.Button( new GUIContent( mat.material.name, mat.material.name), GUILayout.Width(150), GUILayout.Height(50) );
             GUILayout.EndHorizontal();
+            GUILayout.Space(5);
         }
         
         EditorGUILayout.EndScrollView();
@@ -265,16 +269,17 @@ public class AssetsChecker : EditorWindow
 
         foreach (TextureDetails tex in AllTextures){
             GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
             //Texture thumb = mat.material
             //AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
             GUILayout.Box(AssetPreview.GetAssetPreview(tex.texture), GUILayout.Width(50), GUILayout.Height(50));
             //GUILayout.Box( thumb, GUILayout.Width(50), GUILayout.Height(50) );
             GUILayout.Button( new GUIContent( tex.texture.name, tex.texture.name), GUILayout.Width(150), GUILayout.Height(50) );
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-			GUILayout.Button( new GUIContent( tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50));
-			GUILayout.Box("\n" + EditorUtility.FormatBytes(tex.memSizeBytes),GUILayout.Width(120),GUILayout.Height(50));
-            
+	    GUILayout.Button( new GUIContent( tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50));
+	    GUILayout.Box("\n" + EditorUtility.FormatBytes(tex.memSizeBytes),GUILayout.Width(120),GUILayout.Height(50));
             GUILayout.EndHorizontal(); 
+            GUILayout.Space(5);
         }
         EditorGUILayout.EndScrollView();
     }
@@ -324,14 +329,17 @@ public class AssetsChecker : EditorWindow
             }
         }
         
-        //按照指定的排序方法排序
+        
         foreach(TextureDetails tTextureDetails in AllTextures){
             tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTextureDetails.texture);
             TotalTextureMemory += tTextureDetails.memSizeBytes;
         }
+
+        //按占内存多少排序
         if(sortType == 1){
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
         }
+        //按引用顺序排序
         if(sortType == 3){
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
         }
@@ -370,5 +378,4 @@ public class AssetsChecker : EditorWindow
         return result;
     }
 }
-
 
