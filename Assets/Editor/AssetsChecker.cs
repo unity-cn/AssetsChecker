@@ -133,11 +133,11 @@ public class AssetsChecker : EditorWindow
     {
         defColor = GUI.color;
         Texture2D iconTexture = AssetPreview.GetMiniTypeThumbnail( typeof( Texture2D ) );
-	Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-	Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
-	Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail( typeof( Shader ) );
-	Texture2D iconSound = AssetPreview.GetMiniTypeThumbnail( typeof( AudioClip ) );
-	Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail( typeof( MonoScript ) );
+		Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
+		Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
+		Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail( typeof( Shader ) );
+		Texture2D iconSound = AssetPreview.GetMiniTypeThumbnail( typeof( AudioClip ) );
+		Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail( typeof( MonoScript ) );
         Texture2D iconSortAlpha = EditorGUIUtility.FindTexture("AlphabeticalSorting");
         Texture2D iconSortDefault = EditorGUIUtility.FindTexture("DefaultSorting");
         Texture2D iconSortDepend = EditorGUIUtility.FindTexture("CustomSorting");
@@ -276,8 +276,8 @@ public class AssetsChecker : EditorWindow
             //GUILayout.Box( thumb, GUILayout.Width(50), GUILayout.Height(50) );
             GUILayout.Button( new GUIContent( tex.texture.name, tex.texture.name), GUILayout.Width(150), GUILayout.Height(50) );
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-	    GUILayout.Button( new GUIContent( tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50));
-	    GUILayout.Box("\n" + EditorUtility.FormatBytes(tex.memSizeBytes),GUILayout.Width(120),GUILayout.Height(50));
+			GUILayout.Button( new GUIContent( tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50));
+			GUILayout.Box("\n" + EditorUtility.FormatBytes(tex.memSizeBytes),GUILayout.Width(120),GUILayout.Height(50));
             GUILayout.EndHorizontal(); 
             GUILayout.Space(5);
         }
@@ -349,7 +349,17 @@ public class AssetsChecker : EditorWindow
     private T[] GetAtPath<T>(string path)
     {
         ArrayList al = new ArrayList();
-        string[] fileEntries = Directory.GetFiles(Application.dataPath + path);
+        int dash = path.IndexOf("/");
+        
+        string shortPath;
+        if(path.Equals("Assets")){
+            shortPath = "";
+        }
+        else shortPath = path.Substring(dash);
+        //Debug.Log(shortPath);
+        
+        //string shortPath = path;
+        string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath);
       
         foreach (string fileName in fileEntries)
         {
@@ -357,12 +367,12 @@ public class AssetsChecker : EditorWindow
             string temp = fileName.Replace("\\", "/");
             
             int index = temp.LastIndexOf("/");
-            string localPath = "Assets" + path;
- 
+            //string localPath = "Assets" + path;
+            string localPath = path;
             if (index > 0)
                 localPath += temp.Substring(index);
 
-
+            //Debug.Log(localPath);
             Object t = AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
            
             if (t != null)
@@ -378,4 +388,3 @@ public class AssetsChecker : EditorWindow
         return result;
     }
 }
-
