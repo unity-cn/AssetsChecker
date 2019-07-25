@@ -7,14 +7,12 @@ using System.Collections.Generic;
 using System.Reflection;
 using Object = UnityEngine.Object;
 
-public class MaterialDetails
-{	
+public class MaterialDetails{	
     public Material material;
 	public List<GameObject> FoundInGameObjects = new List<GameObject>();		
 };
 
-public class TextureDetails
-{	
+public class TextureDetails{	
     public Texture texture;
     public int memSizeBytes = 0;
 
@@ -101,17 +99,20 @@ public class TextureDetails
 };
 
 public class MeshDetails{
-
     public Mesh mesh;
     public List<GameObject> FoundInGameObjects = new List<GameObject>();
 };
 
-public class AssetsChecker : EditorWindow
-{
+public class ShaderDetails{	
+    public Shader shader;
+	public List<GameObject> FoundInGameObjects = new List<GameObject>();
+    public List<Material> FoundInMaterials = new List<Material>();		
+};
+
+public class AssetsChecker : EditorWindow{
 
     static int MinWidth = 480;
     string inputPath = "Assets";
-
 
     int TotalTextureMemory = 0;
     Color defColor;
@@ -119,13 +120,15 @@ public class AssetsChecker : EditorWindow
     Vector2 textureListScrollPos=new Vector2(0,0);
     Vector2 materialListScrollPos=new Vector2(0,0);
     Vector2 meshListScrollPos=new Vector2(0,0);
+    Vector2 shaderListScrollPos=new Vector2(0,0);
     
 	List<MaterialDetails> AllMaterials = new List<MaterialDetails>();
 	List<TextureDetails> AllTextures = new List<TextureDetails>();
     List<MeshDetails> AllMeshes = new List<MeshDetails>();
+    List<ShaderDetails> AllShaders = new List<ShaderDetails>();
 
     enum InspectType 
-	{
+    {
 		Textures, Materials, Meshes, Shaders, Sounds, Scripts
 	};
 
@@ -166,7 +169,6 @@ public class AssetsChecker : EditorWindow
         
         GUILayout.Space(10);
 
-
         GUIContent [] guiObjs = 
 		{
 			new GUIContent( iconTexture, "Active Textures" ), 
@@ -181,21 +183,19 @@ public class AssetsChecker : EditorWindow
 		{
 			GUILayout.Width( 300 ),
 			GUILayout.Height( 50 ),
-		};
-		
+		};	
 
 		GUILayout.BeginHorizontal();
         GUILayout.Space(19);
 
-		ActiveInspectType=(InspectType)GUILayout.Toolbar((int)ActiveInspectType,guiObjs,options);
-
-      
+		ActiveInspectType=(InspectType)GUILayout.Toolbar((int)ActiveInspectType,guiObjs,options);    
 
 		GUILayout.Box((
 			"Summary\n" +
 			"Materials: " + AllMaterials.Count + "\n" + 
             "Textures: " + AllTextures.Count + " - " + EditorUtility.FormatBytes(TotalTextureMemory)) + "\n" +
-            "Meshes: " + AllMeshes.Count,
+            "Meshes: " + AllMeshes.Count + "\n" +
+            "Shaders: " + AllShaders.Count,
 
             GUILayout.Width(150), GUILayout.Height(100));
 
@@ -205,20 +205,23 @@ public class AssetsChecker : EditorWindow
 
         GUILayout.BeginHorizontal();
         GUILayout.Space(20);
-        if(GUILayout.Button(iconSortDefault, GUILayout.Width(30), GUILayout.Height(30))){
+        if(GUILayout.Button(new GUIContent(iconSortDefault, "Sort by size"), GUILayout.Width(30), GUILayout.Height(30))){
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
         }
         
-        if(GUILayout.Button(iconSortAlpha, GUILayout.Width(30), GUILayout.Height(30))){
-            //AllTextures.Sort();
+        if(GUILayout.Button(new GUIContent(iconSortAlpha, "Sort Alphabetically"), GUILayout.Width(30), GUILayout.Height(30))){
+            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return string.Compare(details1.texture.name,details2.texture.name);});
+            AllMaterials.Sort(delegate(MaterialDetails details1, MaterialDetails details2) {return string.Compare(details1.material.name,details2.material.name);});
+            AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return string.Compare(details1.mesh.name,details2.mesh.name);});
+            AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return string.Compare(details1.shader.name,details2.shader.name);});
         }
         
-        if(GUILayout.Button(iconSortDepend, GUILayout.Width(30), GUILayout.Height(30))){
+        if(GUILayout.Button(new GUIContent(iconSortDepend, "Sort by Dependency"), GUILayout.Width(30), GUILayout.Height(30))){
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
+            AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
         }
 		GUILayout.EndHorizontal();
         
-
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
 
         switch (ActiveInspectType)
@@ -235,10 +238,11 @@ public class AssetsChecker : EditorWindow
 		case InspectType.Meshes:
 			ListMeshes();
 			break;
-        /* 
+
 		case InspectType.Shaders:
 			ListShaders();
 			break;
+        /* 
 		case InspectType.Sounds:
 			ListSounds();
 			break;
@@ -246,26 +250,19 @@ public class AssetsChecker : EditorWindow
 			ListScripts();
 			break;
         */
-		}
-
-       
+		}  
     }
 
     //读取相应的List，并打印到屏幕上
-    void ListMaterials()
-	{
-        //GUIStyle gs = new GUIStyle();
-        materialListScrollPos = EditorGUILayout.BeginScrollView(materialListScrollPos);
-
-       
+    void ListMaterials(){
+	
+        materialListScrollPos = EditorGUILayout.BeginScrollView(materialListScrollPos);     
         
         foreach (MaterialDetails mat in AllMaterials){
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            //Texture thumb = mat.material
-            //AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
+
             GUILayout.Box(AssetPreview.GetAssetPreview(mat.material), GUILayout.Width(50), GUILayout.Height(50));
-            //GUILayout.Box( thumb, GUILayout.Width(50), GUILayout.Height(50) );
             if(GUILayout.Button( new GUIContent( mat.material.name, mat.material.name), GUILayout.Width(150), GUILayout.Height(50))){
                 Selection.activeObject = mat.material;
             }
@@ -317,6 +314,30 @@ public class AssetsChecker : EditorWindow
         
         EditorGUILayout.EndScrollView();
     }
+
+    void ListShaders(){
+
+        shaderListScrollPos = EditorGUILayout.BeginScrollView(shaderListScrollPos);
+
+        foreach (ShaderDetails sdr in AllShaders){
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
+
+            GUILayout.Box(AssetPreview.GetAssetPreview(sdr.shader), GUILayout.Width(50), GUILayout.Height(50));
+            if(GUILayout.Button( new GUIContent( sdr.shader.name, sdr.shader.name), GUILayout.Width(150), GUILayout.Height(50) )){
+                Selection.activeObject = sdr.shader;
+            }
+            Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
+			if(GUILayout.Button( new GUIContent( sdr.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50))){
+                Selection.objects = sdr.FoundInMaterials.ToArray();
+            }
+
+            GUILayout.EndHorizontal(); 
+            GUILayout.Space(5);
+        }
+        EditorGUILayout.EndScrollView();
+    }
+
     //将资源分类，并存到对应的list里
     void checkResources()
     {
@@ -334,18 +355,17 @@ public class AssetsChecker : EditorWindow
             AllMaterials.Add(tMaterialDetails);
         }
         
-        //找到material使用的texture
+        //找到material使用的texture和shader
         foreach (MaterialDetails tMaterialDetails in AllMaterials){
             Material tMaterial = tMaterialDetails.material;
             foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] {tMaterial})){
-                if (obj is Texture)
+                if(obj is Texture)
 				{
 					Texture tTexture = obj as Texture;
 					if(tTexture != null){
-                        int check = 0;
-                       
-                        foreach (TextureDetails details in AllTextures){
-			                if (details.texture==tTexture) {
+                        int check = 0;                      
+                        foreach(TextureDetails details in AllTextures){
+			                if (details.texture==tTexture){
                                 check = 1;
                                 details.FoundInMaterials.Add(tMaterial);
                             }
@@ -360,6 +380,24 @@ public class AssetsChecker : EditorWindow
                     }
 					
 				}
+                if(obj is Shader){
+                    Shader tShader = obj as Shader;
+                    if(tShader != null){
+                        int check = 0;
+                        foreach(ShaderDetails details in AllShaders){
+                            if(details.shader==tShader){
+                                check = 1;
+                                details.FoundInMaterials.Add(tMaterial);
+                            }
+                        }
+                        if(check == 0){
+                            ShaderDetails tShaderDetails = new ShaderDetails();
+                            tShaderDetails.shader = tShader;
+                            AllShaders.Add(tShaderDetails);
+                            tShaderDetails.FoundInMaterials.Add(tMaterial);
+                        }              
+                    }
+                }
             }
         }
         
@@ -447,7 +485,6 @@ public class AssetsChecker : EditorWindow
       
         foreach (string fileName in fileEntries)
         {
-
             string temp = fileName.Replace("\\", "/");
             
             int index = temp.LastIndexOf("/");
@@ -458,12 +495,22 @@ public class AssetsChecker : EditorWindow
 
             Object t = AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
            
-            if (t != null)
-                al.Add(t);
+            if (t != null){
+                /* 
+                int check = 0;
+                foreach(Object o in al){
+                    if (o.Equals(t)){
+                        check = 1;
+                        break;
+                    }
+                } 
+                if(check == 0)
+                */
+                    al.Add(t);
+            }
         }
         string [] subdirectoryEntries = Directory.GetDirectories(path);
         foreach(string subdirectory in subdirectoryEntries)
             GetFiles<T>(subdirectory,al);
     }
-
 }
