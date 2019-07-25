@@ -100,7 +100,7 @@ public class AssetsChecker : EditorWindow
 {
 
     static int MinWidth = 480;
-    string inputPath = "";
+    string inputPath = "Assets";
 
     //默认按字母顺序排序
     int sortType = 1;
@@ -195,17 +195,17 @@ public class AssetsChecker : EditorWindow
         GUILayout.Space(20);
         if(GUILayout.Button(iconSortDefault, GUILayout.Width(30), GUILayout.Height(30))){
             sortType = 1;
-            checkResources();
+            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
         }
         
         if(GUILayout.Button(iconSortAlpha, GUILayout.Width(30), GUILayout.Height(30))){
             sortType = 2;
-            checkResources();
+            //AllTextures.Sort();
         }
         
         if(GUILayout.Button(iconSortDepend, GUILayout.Width(30), GUILayout.Height(30))){
             sortType = 3;
-            checkResources();
+            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
         }
 		GUILayout.EndHorizontal();
         
@@ -292,7 +292,8 @@ public class AssetsChecker : EditorWindow
         AllTextures.Clear();
         TotalTextureMemory = 0;
 
-        Material [] materials = GetAtPath<Material>(inputPath);
+        //Material [] materials = GetAtPath<Material>(inputPath);
+        Material [] materials = GetAllFiles<Material>(inputPath);
 
         foreach (Material material in materials){
             MaterialDetails tMaterialDetails = new MaterialDetails();
@@ -335,14 +336,6 @@ public class AssetsChecker : EditorWindow
             TotalTextureMemory += tTextureDetails.memSizeBytes;
         }
 
-        //按占内存多少排序
-        if(sortType == 1){
-            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
-        }
-        //按引用顺序排序
-        if(sortType == 3){
-            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
-        }
     }
 
     //找到目录下的指定类型文件，返回加载后的object
@@ -359,7 +352,7 @@ public class AssetsChecker : EditorWindow
         //Debug.Log(shortPath);
         
         //string shortPath = path;
-        string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath);
+        string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath , "*", SearchOption.AllDirectories);
       
         foreach (string fileName in fileEntries)
         {
@@ -382,9 +375,59 @@ public class AssetsChecker : EditorWindow
         T[] result = new T[al.Count];
  
         for (int i = 0; i < al.Count; i++){
-            result[i] = (T) al[i];
-            
+            result[i] = (T) al[i];  
         }
+
         return result;
     }
+
+
+
+    private T[] GetAllFiles<T>(string path){
+        ArrayList al = new ArrayList();
+        int dash = path.IndexOf("/");
+        string shortPath;
+        if(path.Equals("Assets")){
+            shortPath = "";
+        }
+        else shortPath = path.Substring(dash);
+
+        GetFiles<T>(Application.dataPath + shortPath, al);
+
+        T[] result = new T[al.Count];
+ 
+        for (int i = 0; i < al.Count; i++){
+           result[i] = (T) al[i];  
+        }
+        
+        return result;
+    }
+
+
+
+    private void GetFiles<T>(string path, ArrayList al)
+    {
+        string[] fileEntries = Directory.GetFiles(path);
+      
+        foreach (string fileName in fileEntries)
+        {
+
+            string temp = fileName.Replace("\\", "/");
+            
+            int index = temp.LastIndexOf("/");
+            int PathIndex = path.IndexOf("Assets");
+            string localPath = path.Substring(PathIndex);
+            if (index > 0)
+                localPath += temp.Substring(index);
+
+            Object t = AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
+           
+            if (t != null)
+                al.Add(t);
+        }
+        string [] subdirectoryEntries = Directory.GetDirectories(path);
+        foreach(string subdirectory in subdirectoryEntries)
+            GetFiles<T>(subdirectory,al);
+    }
+
 }
