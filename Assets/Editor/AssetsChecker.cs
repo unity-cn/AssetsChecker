@@ -85,6 +85,10 @@ public class TextureDetails
 			return 4;								
 		case TextureFormat.BGRA32://	 Format returned by iPhone camera
 			return 32;
+
+        case TextureFormat.BC7:
+            return 8;
+
 			#if !UNITY_5 && !UNITY_5_3_OR_NEWER
 			case TextureFormat.ATF_RGB_DXT1://	 Flash-specific RGB DXT1 compressed color texture format.
 			case TextureFormat.ATF_RGBA_JPG://	 Flash-specific RGBA JPG-compressed color texture format.
@@ -96,23 +100,29 @@ public class TextureDetails
 	}
 };
 
+public class MeshDetails{
+
+    public Mesh mesh;
+    public List<GameObject> FoundInGameObjects = new List<GameObject>();
+};
+
 public class AssetsChecker : EditorWindow
 {
 
     static int MinWidth = 480;
     string inputPath = "Assets";
 
-    //默认按字母顺序排序
-    int sortType = 1;
+
     int TotalTextureMemory = 0;
     Color defColor;
 
     Vector2 textureListScrollPos=new Vector2(0,0);
     Vector2 materialListScrollPos=new Vector2(0,0);
-
+    Vector2 meshListScrollPos=new Vector2(0,0);
     
 	List<MaterialDetails> AllMaterials = new List<MaterialDetails>();
 	List<TextureDetails> AllTextures = new List<TextureDetails>();
+    List<MeshDetails> AllMeshes = new List<MeshDetails>();
 
     enum InspectType 
 	{
@@ -176,7 +186,7 @@ public class AssetsChecker : EditorWindow
 
 		GUILayout.BeginHorizontal();
         GUILayout.Space(19);
-		//GUILayout.FlexibleSpace();
+
 		ActiveInspectType=(InspectType)GUILayout.Toolbar((int)ActiveInspectType,guiObjs,options);
 
       
@@ -184,9 +194,11 @@ public class AssetsChecker : EditorWindow
 		GUILayout.Box((
 			"Summary\n" +
 			"Materials: " + AllMaterials.Count + "\n" + 
-            "Textures: " + AllTextures.Count + " - " + EditorUtility.FormatBytes(TotalTextureMemory)), 
+            "Textures: " + AllTextures.Count + " - " + EditorUtility.FormatBytes(TotalTextureMemory)) + "\n" +
+            "Meshes: " + AllMeshes.Count,
+
             GUILayout.Width(150), GUILayout.Height(100));
-        //GUILayout.FlexibleSpace();
+
         GUILayout.EndHorizontal();
 
         GUILayout.Space(10);
@@ -194,23 +206,21 @@ public class AssetsChecker : EditorWindow
         GUILayout.BeginHorizontal();
         GUILayout.Space(20);
         if(GUILayout.Button(iconSortDefault, GUILayout.Width(30), GUILayout.Height(30))){
-            sortType = 1;
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
         }
         
         if(GUILayout.Button(iconSortAlpha, GUILayout.Width(30), GUILayout.Height(30))){
-            sortType = 2;
             //AllTextures.Sort();
         }
         
         if(GUILayout.Button(iconSortDepend, GUILayout.Width(30), GUILayout.Height(30))){
-            sortType = 3;
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
         }
 		GUILayout.EndHorizontal();
         
 
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+
         switch (ActiveInspectType)
 		{
 		
@@ -221,10 +231,11 @@ public class AssetsChecker : EditorWindow
 		case InspectType.Materials:
 			ListMaterials();
 			break;
-        /* 
+        
 		case InspectType.Meshes:
 			ListMeshes();
 			break;
+        /* 
 		case InspectType.Shaders:
 			ListShaders();
 			break;
@@ -255,7 +266,9 @@ public class AssetsChecker : EditorWindow
             //AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
             GUILayout.Box(AssetPreview.GetAssetPreview(mat.material), GUILayout.Width(50), GUILayout.Height(50));
             //GUILayout.Box( thumb, GUILayout.Width(50), GUILayout.Height(50) );
-            GUILayout.Button( new GUIContent( mat.material.name, mat.material.name), GUILayout.Width(150), GUILayout.Height(50) );
+            if(GUILayout.Button( new GUIContent( mat.material.name, mat.material.name), GUILayout.Width(150), GUILayout.Height(50))){
+                Selection.activeObject = mat.material;
+            }
             GUILayout.EndHorizontal();
             GUILayout.Space(5);
         }
@@ -270,26 +283,46 @@ public class AssetsChecker : EditorWindow
         foreach (TextureDetails tex in AllTextures){
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            //Texture thumb = mat.material
-            //AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
+
             GUILayout.Box(AssetPreview.GetAssetPreview(tex.texture), GUILayout.Width(50), GUILayout.Height(50));
-            //GUILayout.Box( thumb, GUILayout.Width(50), GUILayout.Height(50) );
-            GUILayout.Button( new GUIContent( tex.texture.name, tex.texture.name), GUILayout.Width(150), GUILayout.Height(50) );
+            if(GUILayout.Button( new GUIContent( tex.texture.name, tex.texture.name), GUILayout.Width(150), GUILayout.Height(50) )){
+                Selection.activeObject = tex.texture;
+            }
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-			GUILayout.Button( new GUIContent( tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50));
+			if(GUILayout.Button( new GUIContent( tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50))){
+                Selection.objects = tex.FoundInMaterials.ToArray();
+            }
 			GUILayout.Box("\n" + EditorUtility.FormatBytes(tex.memSizeBytes),GUILayout.Width(120),GUILayout.Height(50));
+
             GUILayout.EndHorizontal(); 
             GUILayout.Space(5);
         }
         EditorGUILayout.EndScrollView();
     }
 
+    void ListMeshes(){
+        meshListScrollPos = EditorGUILayout.BeginScrollView(meshListScrollPos);
 
+        foreach (MeshDetails mes in AllMeshes){
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
+
+            GUILayout.Box(AssetPreview.GetAssetPreview(mes.mesh), GUILayout.Width(50), GUILayout.Height(50));
+            if(GUILayout.Button( new GUIContent( mes.mesh.name, mes.mesh.name), GUILayout.Width(150), GUILayout.Height(50))){
+                Selection.activeObject = mes.mesh;
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.Space(5);
+        }
+        
+        EditorGUILayout.EndScrollView();
+    }
     //将资源分类，并存到对应的list里
     void checkResources()
     {
         AllMaterials.Clear();
         AllTextures.Clear();
+        AllMeshes.Clear();
         TotalTextureMemory = 0;
 
         //Material [] materials = GetAtPath<Material>(inputPath);
@@ -330,14 +363,19 @@ public class AssetsChecker : EditorWindow
             }
         }
         
-        
+        Mesh[] meshes = GetAllFiles<Mesh>(inputPath);
+        foreach (Mesh mesh in meshes){
+            MeshDetails tMeshDetails = new MeshDetails();
+            tMeshDetails.mesh = mesh;
+            AllMeshes.Add(tMeshDetails);
+        }
         foreach(TextureDetails tTextureDetails in AllTextures){
             tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTextureDetails.texture);
             TotalTextureMemory += tTextureDetails.memSizeBytes;
         }
 
     }
-
+/* 
     //找到目录下的指定类型文件，返回加载后的object
     private T[] GetAtPath<T>(string path)
     {
@@ -349,9 +387,7 @@ public class AssetsChecker : EditorWindow
             shortPath = "";
         }
         else shortPath = path.Substring(dash);
-        //Debug.Log(shortPath);
-        
-        //string shortPath = path;
+
         string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath , "*", SearchOption.AllDirectories);
       
         foreach (string fileName in fileEntries)
@@ -360,12 +396,12 @@ public class AssetsChecker : EditorWindow
             string temp = fileName.Replace("\\", "/");
             
             int index = temp.LastIndexOf("/");
-            //string localPath = "Assets" + path;
+
             string localPath = path;
             if (index > 0)
                 localPath += temp.Substring(index);
 
-            //Debug.Log(localPath);
+
             Object t = AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
            
             if (t != null)
@@ -380,7 +416,7 @@ public class AssetsChecker : EditorWindow
 
         return result;
     }
-
+*/
 
 
     private T[] GetAllFiles<T>(string path){
