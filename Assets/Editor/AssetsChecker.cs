@@ -81,8 +81,8 @@ public class TextureDetails{
 		case TextureFormat.BGRA32://	 Format returned by iPhone camera
 			return 32;
 
-        case TextureFormat.BC7:
-            return 8;
+        	case TextureFormat.BC7:
+            		return 8;
 
 			#if !UNITY_5 && !UNITY_5_3_OR_NEWER
 			case TextureFormat.ATF_RGB_DXT1://	 Flash-specific RGB DXT1 compressed color texture format.
@@ -96,23 +96,23 @@ public class TextureDetails{
 };
 
 public class MeshDetails{
-    public Mesh mesh;
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
+	public Mesh mesh;
+    	public List<GameObject> FoundInGameObjects = new List<GameObject>();
 };
 
 public class ShaderDetails{	
-    public Shader shader;
+    	public Shader shader;
 	public List<GameObject> FoundInGameObjects = new List<GameObject>();
-    public List<Material> FoundInMaterials = new List<Material>();		
+    	public List<Material> FoundInMaterials = new List<Material>();		
 };
 
 public class SoundDetails{
-    public AudioClip clip;
+    	public AudioClip clip;
 	public List<GameObject> FoundInGameObjects = new List<GameObject>(); 
 };
 
 public class ScriptDetails{
-    public MonoScript script;
+    	public MonoScript script;
 	public List<GameObject> FoundInGameObjects = new List<GameObject>();
 };
 
@@ -131,20 +131,20 @@ public class AssetsChecker : EditorWindow{
     Vector2 materialListScrollPos=new Vector2(0,0);
     Vector2 meshListScrollPos=new Vector2(0,0);
     Vector2 shaderListScrollPos=new Vector2(0,0);
-	Vector2 soundListScrollPos=new Vector2(0,0);
-	Vector2 scriptListScrollPos=new Vector2(0,0);
+    Vector2 soundListScrollPos=new Vector2(0,0);
+    Vector2 scriptListScrollPos=new Vector2(0,0);
 
-	List<MaterialDetails> AllMaterials = new List<MaterialDetails>();
-	List<TextureDetails> AllTextures = new List<TextureDetails>();
+    List<MaterialDetails> AllMaterials = new List<MaterialDetails>();
+    List<TextureDetails> AllTextures = new List<TextureDetails>();
     List<MeshDetails> AllMeshes = new List<MeshDetails>();
     List<ShaderDetails> AllShaders = new List<ShaderDetails>();
-	List<SoundDetails> AllSounds = new List<SoundDetails>();
-	List<ScriptDetails> AllScripts = new List<ScriptDetails>();
+    List<SoundDetails> AllSounds = new List<SoundDetails>();
+    List<ScriptDetails> AllScripts = new List<ScriptDetails>();
 
     enum InspectType 
     {
-		Textures, Materials, Meshes, Shaders, Sounds, Scripts
-	};
+	Textures, Materials, Meshes, Shaders, Sounds, Scripts
+    };
 
     InspectType ActiveInspectType=InspectType.Materials;
 
@@ -158,11 +158,11 @@ public class AssetsChecker : EditorWindow{
     void OnGUI(){
         defColor = GUI.color;
         Texture2D iconTexture = AssetPreview.GetMiniTypeThumbnail( typeof( Texture2D ) );
-		Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-		Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
-		Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail( typeof( Shader ) );
-		Texture2D iconSound = AssetPreview.GetMiniTypeThumbnail( typeof( AudioClip ) );
-		Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail( typeof( MonoScript ) );
+	Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
+	Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
+	Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail( typeof( Shader ) );
+	Texture2D iconSound = AssetPreview.GetMiniTypeThumbnail( typeof( AudioClip ) );
+	Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail( typeof( MonoScript ) );
         Texture2D iconSortAlpha = EditorGUIUtility.FindTexture("AlphabeticalSorting");
         Texture2D iconSortDefault = EditorGUIUtility.FindTexture("DefaultSorting");
         Texture2D iconSortDepend = EditorGUIUtility.FindTexture("CustomSorting");
@@ -207,12 +207,12 @@ public class AssetsChecker : EditorWindow{
 		};
 
         GUILayoutOption [] options = 
-		{
-			GUILayout.Width( 300 ),
-			GUILayout.Height( 50 ),
-		};	
+	{
+		GUILayout.Width( 300 ),
+		GUILayout.Height( 50 ),
+	};	
 
-		GUILayout.BeginHorizontal();
+	GUILayout.BeginHorizontal();
         GUILayout.Space(19);
 
 		ActiveInspectType=(InspectType)GUILayout.Toolbar((int)ActiveInspectType,guiObjs,options);    
@@ -367,7 +367,7 @@ public class AssetsChecker : EditorWindow{
                 Selection.activeObject = sdr.shader;
             }
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
-			if(GUILayout.Button( new GUIContent( sdr.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50))){
+		if(GUILayout.Button( new GUIContent( sdr.FoundInMaterials.Count.ToString(), iconMaterials, "Materials" ), GUILayout.Width(60), GUILayout.Height(50))){
                 Selection.objects = sdr.FoundInMaterials.ToArray();
             }
 
