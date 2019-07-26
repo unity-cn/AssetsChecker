@@ -19,19 +19,16 @@ public class TextureDetails{
     public List<Object> FoundInMaterials=new List<Object>();
 	public List<GameObject> FoundInGameObjects = new List<GameObject>();	
 
-    public static int CalculateTextureSizeBytes(Texture tTexture)
-	{
+    public static int CalculateTextureSizeBytes(Texture tTexture){
 		int tWidth=tTexture.width;
 		int tHeight=tTexture.height;
-		if (tTexture is Texture2D)
-		{
+		if (tTexture is Texture2D){
 			Texture2D tTex2D=tTexture as Texture2D;
 		 	int bitsPerPixel=GetBitsPerPixel(tTex2D.format);
 			int mipMapCount=tTex2D.mipmapCount;
 			int mipLevel=1;
 			int tSize=0;
-			while (mipLevel<=mipMapCount)
-			{
+			while (mipLevel<=mipMapCount){
 				tSize+=tWidth*tHeight*bitsPerPixel/8;
 				tWidth=tWidth/2;
 				tHeight=tHeight/2;
@@ -40,8 +37,7 @@ public class TextureDetails{
 			return tSize;
 		}
 		
-		if (tTexture is Cubemap)
-		{
+		if (tTexture is Cubemap){
 			Cubemap tCubemap=tTexture as Cubemap;
 		 	int bitsPerPixel=GetBitsPerPixel(tCubemap.format);
 			return tWidth*tHeight*6*bitsPerPixel/8;
@@ -80,7 +76,8 @@ public class TextureDetails{
 		case TextureFormat.PVRTC_RGBA4://	 PowerVR (iOS) 4 bits/pixel compressed with alpha channel texture format
 			return 4;
 		case TextureFormat.ETC_RGB4://	 ETC (GLES2.0) 4 bits/pixel compressed RGB texture format.
-			return 4;								
+			return 4;		
+						
 		case TextureFormat.BGRA32://	 Format returned by iPhone camera
 			return 32;
 
@@ -109,6 +106,16 @@ public class ShaderDetails{
     public List<Material> FoundInMaterials = new List<Material>();		
 };
 
+public class SoundDetails{
+    public AudioClip clip;
+	public List<GameObject> FoundInGameObjects = new List<GameObject>(); 
+};
+
+public class ScriptDetails{
+    public MonoScript script;
+	public List<GameObject> FoundInGameObjects = new List<GameObject>();
+};
+
 public class AssetsChecker : EditorWindow{
 
     static int MinWidth = 480;
@@ -116,18 +123,23 @@ public class AssetsChecker : EditorWindow{
     ArrayList inputPathList = new ArrayList();
 
     int TotalTextureMemory = 0;
-    int checkFlag = 1;
+    int checkOption = 1;
+
     Color defColor;
 
     Vector2 textureListScrollPos=new Vector2(0,0);
     Vector2 materialListScrollPos=new Vector2(0,0);
     Vector2 meshListScrollPos=new Vector2(0,0);
     Vector2 shaderListScrollPos=new Vector2(0,0);
-    
+	Vector2 soundListScrollPos=new Vector2(0,0);
+	Vector2 scriptListScrollPos=new Vector2(0,0);
+
 	List<MaterialDetails> AllMaterials = new List<MaterialDetails>();
 	List<TextureDetails> AllTextures = new List<TextureDetails>();
     List<MeshDetails> AllMeshes = new List<MeshDetails>();
     List<ShaderDetails> AllShaders = new List<ShaderDetails>();
+	List<SoundDetails> AllSounds = new List<SoundDetails>();
+	List<ScriptDetails> AllScripts = new List<ScriptDetails>();
 
     enum InspectType 
     {
@@ -140,12 +152,10 @@ public class AssetsChecker : EditorWindow{
     static void Init()
     {
         AssetsChecker window = (AssetsChecker)EditorWindow.GetWindow(typeof(AssetsChecker));
-        //window.checkResources();
         window.minSize = new Vector2(MinWidth, 475);
     }
 
-    void OnGUI()
-    {
+    void OnGUI(){
         defColor = GUI.color;
         Texture2D iconTexture = AssetPreview.GetMiniTypeThumbnail( typeof( Texture2D ) );
 		Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
@@ -212,13 +222,15 @@ public class AssetsChecker : EditorWindow{
 			"Materials: " + AllMaterials.Count + "\n" + 
             "Textures: " + AllTextures.Count + " - " + EditorUtility.FormatBytes(TotalTextureMemory)) + "\n" +
             "Meshes: " + AllMeshes.Count + "\n" +
-            "Shaders: " + AllShaders.Count,
+            "Shaders: " + AllShaders.Count + "\n" +
+            "Sounds: " + AllSounds.Count + "\n" + 
+            "Scripts: " + AllScripts.Count  + "\n",
 
             GUILayout.Width(150), GUILayout.Height(100));
 
         GUILayout.EndHorizontal();
 
-        GUILayout.Space(10);
+        //GUILayout.Space(10);
 
         GUILayout.BeginHorizontal();
         GUILayout.Space(20);
@@ -231,18 +243,30 @@ public class AssetsChecker : EditorWindow{
             AllMaterials.Sort(delegate(MaterialDetails details1, MaterialDetails details2) {return string.Compare(details1.material.name,details2.material.name);});
             AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return string.Compare(details1.mesh.name,details2.mesh.name);});
             AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return string.Compare(details1.shader.name,details2.shader.name);});
+            AllSounds.Sort(delegate(SoundDetails details1, SoundDetails details2) {return string.Compare(details1.clip.name,details2.clip.name);});
+            AllScripts.Sort(delegate(ScriptDetails details1, ScriptDetails details2) {return string.Compare(details1.script.name,details2.script.name);});
         }
         
         if(GUILayout.Button(new GUIContent(iconSortDepend, "Sort by Dependency"), GUILayout.Width(30), GUILayout.Height(30))){
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
             AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
         }
+
+        GUILayout.Space(320);
+
+        if(GUILayout.Button(checkOption.ToString(), GUILayout.Width(30), GUILayout.Height(30))){
+            if(checkOption == 1){
+                checkOption = 2;
+            }
+            else if(checkOption == 2){
+                checkOption = 1;
+            }
+        }
 		GUILayout.EndHorizontal();
         
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
 
-        switch (ActiveInspectType)
-		{
+        switch (ActiveInspectType){
 		
         case InspectType.Textures:
 			ListTextures();
@@ -259,14 +283,15 @@ public class AssetsChecker : EditorWindow{
 		case InspectType.Shaders:
 			ListShaders();
 			break;
-        /* 
+        
 		case InspectType.Sounds:
 			ListSounds();
 			break;
+
 		case InspectType.Scripts:
 			ListScripts();
 			break;
-        */
+        
 		}  
     }
 
@@ -284,7 +309,6 @@ public class AssetsChecker : EditorWindow{
                 Selection.activeObject = mat.material;
             }
             GUILayout.EndHorizontal();
-            //GUILayout.Space(5);
         }
         
         EditorGUILayout.EndScrollView();
@@ -309,7 +333,6 @@ public class AssetsChecker : EditorWindow{
 			GUILayout.Box("\n" + EditorUtility.FormatBytes(tex.memSizeBytes),GUILayout.Width(120),GUILayout.Height(50));
 
             GUILayout.EndHorizontal(); 
-            //GUILayout.Space(5);
         }
         EditorGUILayout.EndScrollView();
     }
@@ -326,7 +349,6 @@ public class AssetsChecker : EditorWindow{
                 Selection.activeObject = mes.mesh;
             }
             GUILayout.EndHorizontal();
-            //GUILayout.Space(5);
         }
         
         EditorGUILayout.EndScrollView();
@@ -350,24 +372,63 @@ public class AssetsChecker : EditorWindow{
             }
 
             GUILayout.EndHorizontal(); 
-            //GUILayout.Space(5);
         }
         EditorGUILayout.EndScrollView();
     }
 
-    //将资源分类，并存到对应的list里
+   void ListSounds(){
+        soundListScrollPos = EditorGUILayout.BeginScrollView(soundListScrollPos);
+
+        foreach (SoundDetails snd in AllSounds){
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
+
+            GUILayout.Box(AssetPreview.GetAssetPreview(snd.clip), GUILayout.Width(50), GUILayout.Height(50));
+            if(GUILayout.Button( new GUIContent( snd.clip.name, snd.clip.name), GUILayout.Width(150), GUILayout.Height(50))){
+                Selection.activeObject = snd.clip;
+            }
+            GUILayout.EndHorizontal();
+        }
+        
+        EditorGUILayout.EndScrollView();
+    }
+
+    void ListScripts(){
+        scriptListScrollPos = EditorGUILayout.BeginScrollView(scriptListScrollPos);
+
+        foreach(ScriptDetails scp in AllScripts){
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(20);
+
+            GUILayout.Box(AssetPreview.GetAssetPreview(scp.script), GUILayout.Width(50), GUILayout.Height(50));
+            if(GUILayout.Button( new GUIContent( scp.script.name, scp.script.name), GUILayout.Width(150), GUILayout.Height(50))){
+                Selection.activeObject = scp.script;
+            }
+            GUILayout.EndHorizontal();            
+        }
+        EditorGUILayout.EndScrollView();
+    }
+
     void clearResources(){
         AllMaterials.Clear();
         AllTextures.Clear();
         AllMeshes.Clear();
         AllShaders.Clear();
+        AllSounds.Clear();
+        AllScripts.Clear();
         inputPathList.Clear();
         TotalTextureMemory = 0;
     }
+
     void checkResources()
     {
-        Material [] materials = GetAtPath<Material>(inputPath);
-        //Material [] materials = GetAllFiles<Material>(inputPath);
+        Material [] materials = {};
+        if(checkOption == 1){
+            materials = GetAtPath<Material>(inputPath);
+        }
+        if(checkOption == 2){
+            materials = GetAllFiles<Material>(inputPath);
+        }
 
         foreach (Material material in materials){
             MaterialDetails tMaterialDetails = new MaterialDetails();
@@ -379,8 +440,7 @@ public class AssetsChecker : EditorWindow{
         foreach (MaterialDetails tMaterialDetails in AllMaterials){
             Material tMaterial = tMaterialDetails.material;
             foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] {tMaterial})){
-                if(obj is Texture)
-				{
+                if(obj is Texture){
 					Texture tTexture = obj as Texture;
 					if(tTexture != null){
                         int check = 0;                      
@@ -388,6 +448,7 @@ public class AssetsChecker : EditorWindow{
 			                if (details.texture==tTexture){
                                 check = 1;
                                 details.FoundInMaterials.Add(tMaterial);
+                                break;
                             }
 		                }
                         if(check == 0){
@@ -395,10 +456,8 @@ public class AssetsChecker : EditorWindow{
                             tTextureDetails.texture = tTexture;
                             AllTextures.Add(tTextureDetails);
                             tTextureDetails.FoundInMaterials.Add(tMaterial);
-                        }
-                       
-                    }
-					
+                        }  
+                    }				
 				}
                 if(obj is Shader){
                     Shader tShader = obj as Shader;
@@ -408,6 +467,7 @@ public class AssetsChecker : EditorWindow{
                             if(details.shader==tShader){
                                 check = 1;
                                 details.FoundInMaterials.Add(tMaterial);
+                                break;
                             }
                         }
                         if(check == 0){
@@ -420,12 +480,87 @@ public class AssetsChecker : EditorWindow{
                 }
             }
         }
-        Mesh[] meshes = GetAtPath<Mesh>(inputPath);
-        //Mesh[] meshes = GetAllFiles<Mesh>(inputPath);
+        Mesh[] meshes = {};
+        if(checkOption == 1){
+            meshes = GetAtPath<Mesh>(inputPath);
+        }
+        if(checkOption == 2){
+            meshes = GetAllFiles<Mesh>(inputPath);
+        }
+
         foreach (Mesh mesh in meshes){
             MeshDetails tMeshDetails = new MeshDetails();
             tMeshDetails.mesh = mesh;
             AllMeshes.Add(tMeshDetails);
+        }
+        
+        AudioClip[] clips = {};
+        if(checkOption == 1){
+            clips = GetAtPath<AudioClip>(inputPath);
+        }
+        if(checkOption == 2){
+            clips = GetAllFiles<AudioClip>(inputPath);
+        }
+
+        foreach (AudioClip clip in clips){
+            SoundDetails tSoundDetails = new SoundDetails();
+            tSoundDetails.clip = clip;
+            AllSounds.Add(tSoundDetails);
+        }
+
+        MonoScript[] scripts = {};
+        if(checkOption == 1){
+            scripts = GetAtPath<MonoScript>(inputPath);
+        }
+        if(checkOption == 2){
+            scripts = GetAllFiles<MonoScript>(inputPath);
+        }
+
+        foreach (MonoScript script in scripts){
+            ScriptDetails tScriptDetails = new ScriptDetails();
+            tScriptDetails.script = script;
+            AllScripts.Add(tScriptDetails);
+        }
+
+        GameObject[] gos = GetAllFiles<GameObject>(inputPath);
+
+        foreach(GameObject go in gos){
+            foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] {go})) {
+                
+                if(obj is AudioClip){
+                    AudioClip clip = obj as AudioClip;
+                    
+                    int check = 1;
+                    foreach(SoundDetails details in AllSounds){
+                        if(details.clip == clip){
+                            check = 0;
+                            break;
+                        }
+                    }
+                    if(check == 1){
+                        SoundDetails tSoundDetails = new SoundDetails();
+                        tSoundDetails.clip = clip;
+                        AllSounds.Add(tSoundDetails);
+                    }
+                }
+                if(obj is MonoScript){
+                    MonoScript script = obj as MonoScript;
+                    Debug.Log(script);
+                    int check = 1;
+                    foreach(ScriptDetails details in AllScripts){
+                        if(details.script == script){
+                            check = 0;
+                            break;
+                        }
+                    }
+                    if(check == 1){
+                        ScriptDetails tScriptDetails = new ScriptDetails();
+                        tScriptDetails.script = script;
+                        AllScripts.Add(tScriptDetails);
+                    }
+                }
+            }
+           
         }
         foreach(TextureDetails tTextureDetails in AllTextures){
             tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTextureDetails.texture);
@@ -434,9 +569,8 @@ public class AssetsChecker : EditorWindow{
 
     }
  
-    //找到目录下的指定类型文件，返回加载后的object
-    private T[] GetAtPath<T>(string path)
-    {
+    //找到当前目录下全部文件
+    private T[] GetAtPath<T>(string path){
         ArrayList al = new ArrayList();
         int dash = path.IndexOf("/");
         
@@ -476,7 +610,7 @@ public class AssetsChecker : EditorWindow{
     }
 
 
-/* 
+    //递归找到目录及子目录下全部文件
     private T[] GetAllFiles<T>(string path){
         ArrayList al = new ArrayList();
         int dash = path.IndexOf("/");
@@ -499,12 +633,10 @@ public class AssetsChecker : EditorWindow{
 
 
 
-    private void GetFiles<T>(string path, ArrayList al)
-    {
+    private void GetFiles<T>(string path, ArrayList al){
         string[] fileEntries = Directory.GetFiles(path);
       
-        foreach (string fileName in fileEntries)
-        {
+        foreach (string fileName in fileEntries){
             string temp = fileName.Replace("\\", "/");
             
             int index = temp.LastIndexOf("/");
@@ -533,6 +665,5 @@ public class AssetsChecker : EditorWindow{
         foreach(string subdirectory in subdirectoryEntries)
             GetFiles<T>(subdirectory,al);
     }
-*/
-
 }
+
