@@ -125,6 +125,7 @@ public class AssetsChecker : EditorWindow{
 
     string inputPath = "Assets";
     ArrayList inputPathList = new ArrayList();
+    int CurrentPath = 0;
 
     Color defColor;
 
@@ -217,7 +218,7 @@ public class AssetsChecker : EditorWindow{
 			"Summary\n" +
 			"Materials: " + AllMaterials.Count + "\n" + 
             "Textures: " + AllTextures.Count + " - " + EditorUtility.FormatBytes(TotalTextureMemory)) + "\n" +
-            "Meshes " + AllMeshes.Count  + " - "  + TotalMeshVertices.ToString()  + "\n" + 
+            "Meshes " + AllMeshes.Count  +  "\n" + 
             "Shaders: " + AllShaders.Count + "\n" +
             "Sounds: " + AllSounds.Count + "\n" + 
             "Scripts: " + AllScripts.Count  + "\n",
@@ -230,7 +231,9 @@ public class AssetsChecker : EditorWindow{
         GUILayout.BeginHorizontal();
         GUILayout.Space(20);
 
-        GUILayout.Box(iconFolder,GUILayout.Width(30), GUILayout.Height(30));
+        GUILayout.Label(iconFolder,GUILayout.Width(30), GUILayout.Height(30));
+
+
         inputPath = EditorGUILayout.TextField(inputPath, GUILayout.Width(350), GUILayout.Height(30));
         if(GUILayout.Button(new GUIContent(iconPlus, "Add to list"),  GUILayout.Width(30), GUILayout.Height(30))){
             int check = 0;
@@ -244,6 +247,7 @@ public class AssetsChecker : EditorWindow{
                 if(check == 0){
                     checkResources();
                     inputPathList.Add(inputPath);
+                    CurrentPath++;
                 }
             }
         }
@@ -251,6 +255,11 @@ public class AssetsChecker : EditorWindow{
             clearResources();
             checkOption = 1;
         }
+        /* 
+        if(GUILayout.Button("Top", GUILayout.Width(30), GUILayout.Height(30))){
+            GUI.Window(0, new Rect((Screen.width/2)-150,(Screen.height/2)-75, 300, 250), DoMyWindow, "Basic Window");
+        }
+        */
         GUILayout.EndHorizontal();
 
         GUILayout.Space(10);
@@ -258,26 +267,7 @@ public class AssetsChecker : EditorWindow{
         GUILayout.BeginHorizontal();
         GUILayout.Space(20);
         ActiveSortType=(SortType)GUILayout.Toolbar((int)ActiveSortType,sortObjs,sortOptions);
-        /* 
-        if(GUILayout.Button(new GUIContent(iconSortDefault, "Sort by size"), GUILayout.Width(30), GUILayout.Height(30))){
-            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
-            AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return details2.mesh.vertexCount-details1.mesh.vertexCount;});
-        }
-        
-        if(GUILayout.Button(new GUIContent(iconSortAlpha, "Sort Alphabetically"), GUILayout.Width(30), GUILayout.Height(30))){
-            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return string.Compare(details1.texture.name,details2.texture.name);});
-            AllMaterials.Sort(delegate(MaterialDetails details1, MaterialDetails details2) {return string.Compare(details1.material.name,details2.material.name);});
-            AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return string.Compare(details1.mesh.name,details2.mesh.name);});
-            AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return string.Compare(details1.shader.name,details2.shader.name);});
-            AllSounds.Sort(delegate(SoundDetails details1, SoundDetails details2) {return string.Compare(details1.clip.name,details2.clip.name);});
-            AllScripts.Sort(delegate(ScriptDetails details1, ScriptDetails details2) {return string.Compare(details1.script.name,details2.script.name);});
-        }
-        
-        if(GUILayout.Button(new GUIContent(iconSortDepend, "Sort by Dependency"), GUILayout.Width(30), GUILayout.Height(30))){
-            AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
-            AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
-        }
-        */
+
         GUILayout.Space(258);
 
         if(GUILayout.Button("Check all assets", GUILayout.Width(100), GUILayout.Height(30))){
@@ -341,7 +331,16 @@ public class AssetsChecker : EditorWindow{
 
         }
     }
-
+    /* 
+    void DoMyWindow(int windowID){
+        GUI.Button(new Rect(10, 30, 80, 20), "Click Me!");
+            
+            for(int i=0; i<inputPathList.Count; i++){
+                GUI.Box(new Rect(10,30, 80, 20),(string)inputPathList[i]);
+            }
+            
+    }
+    */
     //读取相应的List，并打印到屏幕上
     void ListMaterials(){
 	
@@ -355,6 +354,7 @@ public class AssetsChecker : EditorWindow{
             if(GUILayout.Button( new GUIContent( mat.material.name, mat.material.name), GUILayout.Width(150), GUILayout.Height(50))){
                 Selection.activeObject = mat.material;
             }
+            //GUILayout.Label(AssetDatabase.GetAssetPath(mat.material), GUILayout.Width(150), GUILayout.Height(50));
             GUILayout.EndHorizontal();
         }
         
@@ -633,7 +633,7 @@ public class AssetsChecker : EditorWindow{
     private T[] GetAtPath<T>(string path){
         ArrayList al = new ArrayList();
         int dash = path.IndexOf("/");
-        
+
         string shortPath;
         if(path.Equals("Assets")){
             shortPath = "";
