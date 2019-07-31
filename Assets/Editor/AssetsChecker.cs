@@ -81,8 +81,8 @@ public class TextureDetails{
 		case TextureFormat.BGRA32://	 Format returned by iPhone camera
 			return 32;
 
-        	case TextureFormat.BC7:
-            		return 8;
+        case TextureFormat.BC7:
+            return 8;
 
 			#if !UNITY_5 && !UNITY_5_3_OR_NEWER
 			case TextureFormat.ATF_RGB_DXT1://	 Flash-specific RGB DXT1 compressed color texture format.
@@ -147,7 +147,13 @@ public class AssetsChecker : EditorWindow{
 		Textures, Materials, Meshes, Shaders, Sounds, Scripts
 	};
 
+    enum SortType
+    {
+        AlphaSort, SizeSort, DependencySort
+    };
+
     InspectType ActiveInspectType=InspectType.Materials;
+    SortType ActiveSortType=SortType.AlphaSort;
 
     [MenuItem("Window/Assets Checker")]
     static void Init()
@@ -189,10 +195,23 @@ public class AssetsChecker : EditorWindow{
 			GUILayout.Height( 50 ),
 		};	
 
+        GUIContent [] sortObjs = {
+            new GUIContent(iconSortDefault, "Sort by size"),
+            new GUIContent(iconSortAlpha, "Sort Alphabetically"),
+            new GUIContent(iconSortDepend, "Sort by Dependency"),
+        };
+
+        GUILayoutOption [] sortOptions = 
+        {
+            GUILayout.Width(90),
+            GUILayout.Height(30),
+        };
+
 		GUILayout.BeginHorizontal();
         GUILayout.Space(19);
 
 		ActiveInspectType=(InspectType)GUILayout.Toolbar((int)ActiveInspectType,guiObjs,options);    
+ 
 
 		GUILayout.Box((
 			"Summary\n" +
@@ -238,6 +257,8 @@ public class AssetsChecker : EditorWindow{
 
         GUILayout.BeginHorizontal();
         GUILayout.Space(20);
+        ActiveSortType=(SortType)GUILayout.Toolbar((int)ActiveSortType,sortObjs,sortOptions);
+        /* 
         if(GUILayout.Button(new GUIContent(iconSortDefault, "Sort by size"), GUILayout.Width(30), GUILayout.Height(30))){
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
             AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return details2.mesh.vertexCount-details1.mesh.vertexCount;});
@@ -256,8 +277,8 @@ public class AssetsChecker : EditorWindow{
             AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
             AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
         }
-
-        GUILayout.Space(250);
+        */
+        GUILayout.Space(258);
 
         if(GUILayout.Button("Check all assets", GUILayout.Width(100), GUILayout.Height(30))){
             if(checkOption != 2){
@@ -296,6 +317,29 @@ public class AssetsChecker : EditorWindow{
 			break;
         
 		}  
+
+        switch (ActiveSortType){
+
+            case SortType.AlphaSort:
+                AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return string.Compare(details1.texture.name,details2.texture.name);});
+                AllMaterials.Sort(delegate(MaterialDetails details1, MaterialDetails details2) {return string.Compare(details1.material.name,details2.material.name);});
+                AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return string.Compare(details1.mesh.name,details2.mesh.name);});
+                AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return string.Compare(details1.shader.name,details2.shader.name);});
+                AllSounds.Sort(delegate(SoundDetails details1, SoundDetails details2) {return string.Compare(details1.clip.name,details2.clip.name);});
+                AllScripts.Sort(delegate(ScriptDetails details1, ScriptDetails details2) {return string.Compare(details1.script.name,details2.script.name);});
+                break;
+
+            case SortType.SizeSort:
+                AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.memSizeBytes-details1.memSizeBytes;});
+                AllMeshes.Sort(delegate(MeshDetails details1, MeshDetails details2) {return details2.mesh.vertexCount-details1.mesh.vertexCount;});
+                break;
+
+            case SortType.DependencySort:
+                AllTextures.Sort(delegate(TextureDetails details1, TextureDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
+                AllShaders.Sort(delegate(ShaderDetails details1, ShaderDetails details2) {return details2.FoundInMaterials.Count-details1.FoundInMaterials.Count;});
+                break;
+
+        }
     }
 
     //读取相应的List，并打印到屏幕上
