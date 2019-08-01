@@ -164,7 +164,41 @@ public class AssetsChecker : EditorWindow{
     }
 
     void OnGUI(){
+        
         defColor = GUI.color;
+
+
+        //替换图标用的代码
+
+        /* 
+        byte[] fileData;
+
+        Texture2D iconHandDraw1 = null;
+        fileData = File.ReadAllBytes("Assets/icons/plus.png");
+        iconHandDraw1 = new Texture2D(2,2);
+        iconHandDraw1.LoadImage(fileData);
+        
+        Texture2D iconHandDraw2 = null;
+        fileData = File.ReadAllBytes("Assets/icons/sort1.png");
+        iconHandDraw2 = new Texture2D(2,2);
+        iconHandDraw2.LoadImage(fileData);
+
+        Texture2D iconHandDraw3 = null;
+        fileData = File.ReadAllBytes("Assets/icons/sort2.png");
+        iconHandDraw3 = new Texture2D(2,2);
+        iconHandDraw3.LoadImage(fileData);
+
+        Texture2D iconHandDraw4 = null;
+        fileData = File.ReadAllBytes("Assets/icons/sort3.png");
+        iconHandDraw4 = new Texture2D(2,2);
+        iconHandDraw4.LoadImage(fileData);
+
+        Texture2D iconHandDraw5 = null;
+        fileData = File.ReadAllBytes("Assets/icons/refresh.png");
+        iconHandDraw5 = new Texture2D(2,2);
+        iconHandDraw5.LoadImage(fileData);
+        */
+
         Texture2D iconTexture = AssetPreview.GetMiniTypeThumbnail( typeof( Texture2D ) );
 		Texture2D iconMaterial = AssetPreview.GetMiniTypeThumbnail( typeof( Material ) );
 		Texture2D iconMesh = AssetPreview.GetMiniTypeThumbnail( typeof( Mesh ) );
@@ -195,6 +229,16 @@ public class AssetsChecker : EditorWindow{
 			GUILayout.Width( 300 ),
 			GUILayout.Height( 50 ),
 		};	
+
+        //替换图标用的代码
+        /* 
+        GUIContent [] sortObjs = {
+            new GUIContent(iconHandDraw4, "Sort by size"),
+            new GUIContent(iconHandDraw3, "Sort Alphabetically"),
+            new GUIContent(iconHandDraw2, "Sort by Dependency"),
+        };
+        */
+
 
         GUIContent [] sortObjs = {
             new GUIContent(iconSortDefault, "Sort by size"),
@@ -235,6 +279,7 @@ public class AssetsChecker : EditorWindow{
 
 
         inputPath = EditorGUILayout.TextField(inputPath, GUILayout.Width(350), GUILayout.Height(30));
+        //if(GUILayout.Button(new GUIContent(iconHandDraw1, "Add to list"),  GUILayout.Width(30), GUILayout.Height(30))){
         if(GUILayout.Button(new GUIContent(iconPlus, "Add to list"),  GUILayout.Width(30), GUILayout.Height(30))){
             int check = 0;
             if(checkOption == 1){
@@ -251,15 +296,12 @@ public class AssetsChecker : EditorWindow{
                 }
             }
         }
+        //if(GUILayout.Button(new GUIContent(iconHandDraw5, "Clear list"), GUILayout.Width(30), GUILayout.Height(30))){
         if(GUILayout.Button(new GUIContent(iconRefresh, "Clear list"), GUILayout.Width(30), GUILayout.Height(30))){
             clearResources();
             checkOption = 1;
         }
-        /* 
-        if(GUILayout.Button("Top", GUILayout.Width(30), GUILayout.Height(30))){
-            GUI.Window(0, new Rect((Screen.width/2)-150,(Screen.height/2)-75, 300, 250), DoMyWindow, "Basic Window");
-        }
-        */
+
         GUILayout.EndHorizontal();
 
         GUILayout.Space(10);
@@ -277,7 +319,8 @@ public class AssetsChecker : EditorWindow{
             }
         }
 		GUILayout.EndHorizontal();
-        
+
+
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
 
         switch (ActiveInspectType){
@@ -331,16 +374,7 @@ public class AssetsChecker : EditorWindow{
 
         }
     }
-    /* 
-    void DoMyWindow(int windowID){
-        GUI.Button(new Rect(10, 30, 80, 20), "Click Me!");
-            
-            for(int i=0; i<inputPathList.Count; i++){
-                GUI.Box(new Rect(10,30, 80, 20),(string)inputPathList[i]);
-            }
-            
-    }
-    */
+
     //读取相应的List，并打印到屏幕上
     void ListMaterials(){
 	
