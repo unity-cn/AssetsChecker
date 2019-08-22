@@ -348,6 +348,9 @@ public class AssetsChecker : EditorWindow
 
         // 显示手动刷新资源列表的按钮，并处理输入
 
+        // 注：这是一个单向操作，重复点击也不能使checkOptions回到1
+        // TODO: 需要在显示上做一些修改
+
         if (GUILayout.Button("Check all assets", GUILayout.Width(100), GUILayout.Height(30)))
         {
             if (checkOption != 2)
@@ -577,9 +580,13 @@ public class AssetsChecker : EditorWindow
         TotalMeshVertices = 0;
     }
 
+    // 调用时机：目录列表改变，检索模式改变
+
     void checkResources()
     {
         Material[] materials = { };
+
+        // TODO: inputPathList从未被使用，一直使用的是当前的inputPath
         if (checkOption == 1)
         {
             materials = GetAtPath<Material>(inputPath);
@@ -595,6 +602,8 @@ public class AssetsChecker : EditorWindow
             tMaterialDetails.material = material;
             AllMaterials.Add(tMaterialDetails);
         }
+
+        //TODO: 目前只会找到有material引用的Texture和Shader，这样做不符合我们找到冗余(未引用)资源的目的
 
         //找到material使用的texture和shader
         foreach (MaterialDetails tMaterialDetails in AllMaterials)
@@ -754,6 +763,7 @@ public class AssetsChecker : EditorWindow
             }
 
         }
+
         foreach (TextureDetails tTextureDetails in AllTextures)
         {
             tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTextureDetails.texture);
@@ -770,50 +780,45 @@ public class AssetsChecker : EditorWindow
     // 找到当前目录下全部文件
 
     private T[] GetAtPath<T>(string path)
+        where T : UnityEngine.Object
     {
-        ArrayList al = new ArrayList();
-        int dash = path.IndexOf("/");
+        List<T> al = new List<T>();
 
-        string shortPath;
-        if (path.Equals("Assets"))
+        string shortPath = "";
+        if (path.StartsWith("Assets")
+            && path.Length > "Assets".Length)
         {
-            shortPath = "";
+            shortPath = path.Substring("Assets".Length);
         }
-        else shortPath = path.Substring(dash);
 
-        string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath, "*", SearchOption.AllDirectories);
+        // TODO: (异常处理)如果path不存在会报错
+        string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath, "*", SearchOption.TopDirectoryOnly);
 
-        foreach (string fileName in fileEntries)
+        foreach (string filePath in fileEntries)
         {
-            string temp = fileName.Replace("\\", "/");
+            // TODO: (剪枝)排除.meta结尾的文件
 
-            int index = temp.LastIndexOf("/");
+            string temp = filePath.Replace("\\", "/");
 
-            string localPath = path;
-            if (index > 0)
-                localPath += temp.Substring(index);
+            string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
 
-            Object t = AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
+            T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
 
             if (t != null)
                 al.Add(t);
         }
 
-        T[] result = new T[al.Count];
-
-        for (int i = 0; i < al.Count; i++)
-        {
-            result[i] = (T)al[i];
-        }
-        return result;
+        return al.ToArray();
     }
 
     // 递归找到目录及子目录下全部文件
 
     private T[] GetAllFiles<T>(string path)
+        where T : UnityEngine.Object
     {
-        ArrayList al = new ArrayList();
+        List<T> al = new List<T>();
         int dash = path.IndexOf("/");
+
         string shortPath;
         if (path.Equals("Assets"))
         {
@@ -821,46 +826,25 @@ public class AssetsChecker : EditorWindow
         }
         else shortPath = path.Substring(dash);
 
-        GetFiles<T>(Application.dataPath + shortPath, al);
+        // TODO: (异常处理)如果path不存在会报错
+        string fullPath = Application.dataPath + shortPath;
+        string[] fileEntries = Directory.GetFiles(fullPath, "*", SearchOption.AllDirectories);
 
-        T[] result = new T[al.Count];
-
-        for (int i = 0; i < al.Count; i++)
+        foreach (string filePath in fileEntries)
         {
-            result[i] = (T)al[i];
-        }
-        return result;
-    }
+            // TODO: (剪枝)排除.meta结尾的文件，排除文件夹
 
-    private void GetFiles<T>(string path, ArrayList al)
-    {
-        string[] fileEntries = Directory.GetFiles(path);
+            string temp = filePath.Replace("\\", "/");
 
-        foreach (string fileName in fileEntries)
-        {
-            string temp = fileName.Replace("\\", "/");
+            string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
 
-            int index = temp.LastIndexOf("/");
-            int PathIndex = path.IndexOf("Assets");
-            string localPath = path.Substring(PathIndex);
-            if (index > 0)
-                localPath += temp.Substring(index);
-
-            Object t = AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
+            T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
 
             if (t != null)
-            {
-                if (!al.Contains(t))
-                {
-                    al.Add(t);
-                }
-            }
+                al.Add(t);
+        }
 
-        }
-        string[] subdirectoryEntries = Directory.GetDirectories(path);
-        foreach (string subdirectory in subdirectoryEntries)
-        {
-            GetFiles<T>(subdirectory, al);
-        }
+        return al.ToArray();
     }
+
 }
