@@ -785,27 +785,43 @@ public class AssetsChecker : EditorWindow
         List<T> al = new List<T>();
 
         string shortPath = "";
-        if (path.StartsWith("Assets")
-            && path.Length > "Assets".Length)
+        if (path.StartsWith("Assets"))
         {
-            shortPath = path.Substring("Assets".Length);
+            if (path.Length > "Assets".Length)
+                shortPath = path.Substring("Assets".Length);
+
+            string fullPath = Application.dataPath + shortPath;
+
+            if (Directory.Exists(fullPath))
+            {
+                string[] fileEntries = Directory.GetFiles(fullPath, "*", SearchOption.TopDirectoryOnly);
+
+                foreach (string filePath in fileEntries)
+                {
+                    // TODO: (剪枝)排除.meta结尾的文件，排除文件夹，甚至根据T只检索对应后缀名的文件，也许可以在正则表达式上面做文章
+
+                    string temp = filePath.Replace("\\", "/");
+
+                    string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
+
+                    T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
+
+                    if (t != null)
+                        al.Add(t);
+                }
+            }
+
+            // (异常处理)如果path不存在会报错
+            else
+            {
+                Debug.LogWarning("AssetsChecker: " + fullPath + " not exist!");
+            }
         }
 
-        // TODO: (异常处理)如果path不存在会报错
-        string[] fileEntries = Directory.GetFiles(Application.dataPath + shortPath, "*", SearchOption.TopDirectoryOnly);
-
-        foreach (string filePath in fileEntries)
+        // (异常处理)如果path不以Assets开头会报错
+        else
         {
-            // TODO: (剪枝)排除.meta结尾的文件
-
-            string temp = filePath.Replace("\\", "/");
-
-            string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
-
-            T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
-
-            if (t != null)
-                al.Add(t);
+            Debug.LogWarning("AssetsChecker: " + path + " not start with Assets!");
         }
 
         return al.ToArray();
@@ -817,31 +833,44 @@ public class AssetsChecker : EditorWindow
         where T : UnityEngine.Object
     {
         List<T> al = new List<T>();
-        int dash = path.IndexOf("/");
 
-        string shortPath;
-        if (path.Equals("Assets"))
+        string shortPath = "";
+        if (path.StartsWith("Assets"))
         {
-            shortPath = "";
+            if (path.Length > "Assets".Length)
+                shortPath = path.Substring("Assets".Length);
+
+            string fullPath = Application.dataPath + shortPath;
+            if (Directory.Exists(fullPath))
+            {
+                string[] fileEntries = Directory.GetFiles(fullPath, "*", SearchOption.AllDirectories);
+
+                foreach (string filePath in fileEntries)
+                {
+                    // TODO: (剪枝)排除.meta结尾的文件，排除文件夹，甚至根据T只检索对应后缀名的文件，也许可以在正则表达式上面做文章
+
+                    string temp = filePath.Replace("\\", "/");
+
+                    string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
+
+                    T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
+
+                    if (t != null)
+                        al.Add(t);
+                }
+            }
+
+            // (异常处理)如果path不存在会报错
+            else
+            {
+                Debug.LogWarning("AssetsChecker: " + fullPath + " not exist!");
+            }
         }
-        else shortPath = path.Substring(dash);
 
-        // TODO: (异常处理)如果path不存在会报错
-        string fullPath = Application.dataPath + shortPath;
-        string[] fileEntries = Directory.GetFiles(fullPath, "*", SearchOption.AllDirectories);
-
-        foreach (string filePath in fileEntries)
+        // (异常处理)如果path不以Assets开头会报错
+        else
         {
-            // TODO: (剪枝)排除.meta结尾的文件，排除文件夹
-
-            string temp = filePath.Replace("\\", "/");
-
-            string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
-
-            T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
-
-            if (t != null)
-                al.Add(t);
+            Debug.LogWarning("AssetsChecker: " + path + " not start with Assets!");
         }
 
         return al.ToArray();
