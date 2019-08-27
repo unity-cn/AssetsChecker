@@ -262,8 +262,8 @@ public class AssetsChecker : EditorWindow
         // 显示根据条件进行排序的按钮
 
         GUIContent[] sortObjs = {
-            new GUIContent(iconSortDefault, "Sort by size"),
             new GUIContent(iconSortAlpha, "Sort Alphabetically"),
+            new GUIContent(iconSortDefault, "Sort by size"),
             new GUIContent(iconSortDepend, "Sort by Dependency"),
         };
 
@@ -396,6 +396,7 @@ public class AssetsChecker : EditorWindow
         }
 
         // 根据选择的条件对资源列表进行排序
+        // TODO: 增加复合条件选项
 
         switch (ActiveSortType)
         {
