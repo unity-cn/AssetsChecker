@@ -7,135 +7,151 @@ using System.Collections.Generic;
 using System.Reflection;
 using Object = UnityEngine.Object;
 
+// TODO: 目前FoundInGameObjects未使用
+
 // XXXDetails: 用于储存XXX类型资源的信息
-
-public class MaterialDetails
-{
-    public Material material;
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
-};
-
-public class TextureDetails
-{
-    public Texture texture;
-    public int memSizeBytes = 0;
-
-    public List<Object> FoundInMaterials = new List<Object>();
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
-
-    public static int CalculateTextureSizeBytes(Texture tTexture)
-    {
-        int tWidth = tTexture.width;
-        int tHeight = tTexture.height;
-        if (tTexture is Texture2D)
-        {
-            Texture2D tTex2D = tTexture as Texture2D;
-            int bitsPerPixel = GetBitsPerPixel(tTex2D.format);
-            int mipMapCount = tTex2D.mipmapCount;
-            int mipLevel = 1;
-            int tSize = 0;
-            while (mipLevel <= mipMapCount)
-            {
-                tSize += tWidth * tHeight * bitsPerPixel / 8;
-                tWidth = tWidth / 2;
-                tHeight = tHeight / 2;
-                mipLevel++;
-            }
-            return tSize;
-        }
-
-        if (tTexture is Cubemap)
-        {
-            Cubemap tCubemap = tTexture as Cubemap;
-            int bitsPerPixel = GetBitsPerPixel(tCubemap.format);
-            return tWidth * tHeight * 6 * bitsPerPixel / 8;
-        }
-        return 0;
-    }
-
-    public static int GetBitsPerPixel(TextureFormat format)
-    {
-        switch (format)
-        {
-            case TextureFormat.Alpha8: //	 Alpha-only texture format.
-                return 8;
-            case TextureFormat.ARGB4444: //	 A 16 bits/pixel texture format. Texture stores color with an alpha channel.
-                return 16;
-            case TextureFormat.RGBA4444: //	 A 16 bits/pixel texture format.
-                return 16;
-            case TextureFormat.RGB24:   // A color texture format.
-                return 24;
-            case TextureFormat.RGBA32:  //Color with an alpha channel texture format.
-                return 32;
-            case TextureFormat.ARGB32:  //Color with an alpha channel texture format.
-                return 32;
-            case TextureFormat.RGB565:  //	 A 16 bit color texture format.
-                return 16;
-            case TextureFormat.DXT1:    // Compressed color texture format.
-                return 4;
-            case TextureFormat.DXT5:    // Compressed color with alpha channel texture format.
-                return 8;
-            case TextureFormat.PVRTC_RGB2://	 PowerVR (iOS) 2 bits/pixel compressed color texture format.
-                return 2;
-            case TextureFormat.PVRTC_RGBA2://	 PowerVR (iOS) 2 bits/pixel compressed with alpha channel texture format
-                return 2;
-            case TextureFormat.PVRTC_RGB4://	 PowerVR (iOS) 4 bits/pixel compressed color texture format.
-                return 4;
-            case TextureFormat.PVRTC_RGBA4://	 PowerVR (iOS) 4 bits/pixel compressed with alpha channel texture format
-                return 4;
-            case TextureFormat.ETC_RGB4://	 ETC (GLES2.0) 4 bits/pixel compressed RGB texture format.
-                return 4;
-
-            case TextureFormat.BGRA32://	 Format returned by iPhone camera
-                return 32;
-
-            case TextureFormat.BC7:
-                return 8;
-
-#if !UNITY_5 && !UNITY_5_3_OR_NEWER
-			case TextureFormat.ATF_RGB_DXT1://	 Flash-specific RGB DXT1 compressed color texture format.
-			case TextureFormat.ATF_RGBA_JPG://	 Flash-specific RGBA JPG-compressed color texture format.
-			case TextureFormat.ATF_RGB_JPG://	 Flash-specific RGB JPG-compressed color texture format.
-			return 0; //Not supported yet  
-#endif
-        }
-        return 0;
-    }
-};
-
-public class MeshDetails
-{
-    public Mesh mesh;
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
-};
-
-public class ShaderDetails
-{
-    public Shader shader;
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
-    public List<Material> FoundInMaterials = new List<Material>();
-};
-
-public class SoundDetails
-{
-    public AudioClip clip;
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
-};
-
-public class ScriptDetails
-{
-    public MonoScript script;
-    public List<GameObject> FoundInGameObjects = new List<GameObject>();
-};
 
 public class AssetsChecker : EditorWindow
 {
-    private struct AssetDetails
+    private struct MaterialDetails
     {
-        string name;
-        string path;
-        Texture2D preview;
+        public string name;
+        public string path;
+        public Texture2D preview;
+        public List<string> FoundInGameObjects;
     }
+
+    private struct TextureDetails
+    {
+        public string name;
+        public string path;
+        public Texture2D preview;
+
+        public int memSizeBytes;
+
+        public int height;
+        public int width;
+
+        public List<string> FoundInMaterials;
+        public List<string> FoundInGameObjects;
+
+        public static int CalculateTextureSizeBytes(Texture tTexture)
+        {
+            int tWidth = tTexture.width;
+            int tHeight = tTexture.height;
+            if (tTexture is Texture2D)
+            {
+                Texture2D tTex2D = tTexture as Texture2D;
+                int bitsPerPixel = GetBitsPerPixel(tTex2D.format);
+                int mipMapCount = tTex2D.mipmapCount;
+                int mipLevel = 1;
+                int tSize = 0;
+                while (mipLevel <= mipMapCount)
+                {
+                    tSize += tWidth * tHeight * bitsPerPixel / 8;
+                    tWidth = tWidth / 2;
+                    tHeight = tHeight / 2;
+                    mipLevel++;
+                }
+                return tSize;
+            }
+
+            if (tTexture is Cubemap)
+            {
+                Cubemap tCubemap = tTexture as Cubemap;
+                int bitsPerPixel = GetBitsPerPixel(tCubemap.format);
+                return tWidth * tHeight * 6 * bitsPerPixel / 8;
+            }
+            return 0;
+        }
+
+        public static int GetBitsPerPixel(TextureFormat format)
+        {
+            switch (format)
+            {
+                case TextureFormat.Alpha8: //    Alpha-only texture format.
+                    return 8;
+                case TextureFormat.ARGB4444: //  A 16 bits/pixel texture format. Texture stores color with an alpha channel.
+                    return 16;
+                case TextureFormat.RGBA4444: //  A 16 bits/pixel texture format.
+                    return 16;
+                case TextureFormat.RGB24:   // A color texture format.
+                    return 24;
+                case TextureFormat.RGBA32:  //Color with an alpha channel texture format.
+                    return 32;
+                case TextureFormat.ARGB32:  //Color with an alpha channel texture format.
+                    return 32;
+                case TextureFormat.RGB565:  //   A 16 bit color texture format.
+                    return 16;
+                case TextureFormat.DXT1:    // Compressed color texture format.
+                    return 4;
+                case TextureFormat.DXT5:    // Compressed color with alpha channel texture format.
+                    return 8;
+                case TextureFormat.PVRTC_RGB2://     PowerVR (iOS) 2 bits/pixel compressed color texture format.
+                    return 2;
+                case TextureFormat.PVRTC_RGBA2://    PowerVR (iOS) 2 bits/pixel compressed with alpha channel texture format
+                    return 2;
+                case TextureFormat.PVRTC_RGB4://     PowerVR (iOS) 4 bits/pixel compressed color texture format.
+                    return 4;
+                case TextureFormat.PVRTC_RGBA4://    PowerVR (iOS) 4 bits/pixel compressed with alpha channel texture format
+                    return 4;
+                case TextureFormat.ETC_RGB4://   ETC (GLES2.0) 4 bits/pixel compressed RGB texture format.
+                    return 4;
+
+                case TextureFormat.BGRA32://     Format returned by iPhone camera
+                    return 32;
+
+                case TextureFormat.BC7:
+                    return 8;
+
+#if !UNITY_5 && !UNITY_5_3_OR_NEWER
+            case TextureFormat.ATF_RGB_DXT1://   Flash-specific RGB DXT1 compressed color texture format.
+            case TextureFormat.ATF_RGBA_JPG://   Flash-specific RGBA JPG-compressed color texture format.
+            case TextureFormat.ATF_RGB_JPG://    Flash-specific RGB JPG-compressed color texture format.
+            return 0; //Not supported yet  
+#endif
+            }
+            return 0;
+        }
+    };
+
+    private struct MeshDetails
+    {
+        public string name;
+        public string path;
+        public Texture2D preview;
+
+        public int vertexCount;
+        public int triangles;
+
+        public List<string> FoundInGameObjects;
+    };
+
+    private struct ShaderDetails
+    {
+        public string name;
+        public string path;
+
+        public List<string> FoundInGameObjects;
+        public List<string> FoundInMaterials;
+    };
+
+    public struct SoundDetails
+    {
+        public string name;
+        public string path;
+        public Texture2D preview;
+
+        public List<string> FoundInGameObjects;
+    };
+
+    public struct ScriptDetails
+    {
+        public string name;
+        public string path;
+
+        public List<string> FoundInGameObjects;
+    };
 
     static int MinWidth = 480;
     int TotalTextureMemory = 0;
@@ -408,17 +424,17 @@ public class AssetsChecker : EditorWindow
         {
 
             case SortType.AlphaSort:
-                AllTextures.Sort(delegate (TextureDetails details1, TextureDetails details2) { return string.Compare(details1.texture.name, details2.texture.name); });
-                AllMaterials.Sort(delegate (MaterialDetails details1, MaterialDetails details2) { return string.Compare(details1.material.name, details2.material.name); });
-                AllMeshes.Sort(delegate (MeshDetails details1, MeshDetails details2) { return string.Compare(details1.mesh.name, details2.mesh.name); });
-                AllShaders.Sort(delegate (ShaderDetails details1, ShaderDetails details2) { return string.Compare(details1.shader.name, details2.shader.name); });
-                AllSounds.Sort(delegate (SoundDetails details1, SoundDetails details2) { return string.Compare(details1.clip.name, details2.clip.name); });
-                AllScripts.Sort(delegate (ScriptDetails details1, ScriptDetails details2) { return string.Compare(details1.script.name, details2.script.name); });
+                AllTextures.Sort(delegate (TextureDetails details1, TextureDetails details2) { return string.Compare(details1.name, details2.name); });
+                AllMaterials.Sort(delegate (MaterialDetails details1, MaterialDetails details2) { return string.Compare(details1.name, details2.name); });
+                AllMeshes.Sort(delegate (MeshDetails details1, MeshDetails details2) { return string.Compare(details1.name, details2.name); });
+                AllShaders.Sort(delegate (ShaderDetails details1, ShaderDetails details2) { return string.Compare(details1.name, details2.name); });
+                AllSounds.Sort(delegate (SoundDetails details1, SoundDetails details2) { return string.Compare(details1.name, details2.name); });
+                AllScripts.Sort(delegate (ScriptDetails details1, ScriptDetails details2) { return string.Compare(details1.name, details2.name); });
                 break;
 
             case SortType.SizeSort:
                 AllTextures.Sort(delegate (TextureDetails details1, TextureDetails details2) { return details2.memSizeBytes - details1.memSizeBytes; });
-                AllMeshes.Sort(delegate (MeshDetails details1, MeshDetails details2) { return details2.mesh.vertexCount - details1.mesh.vertexCount; });
+                AllMeshes.Sort(delegate (MeshDetails details1, MeshDetails details2) { return details2.vertexCount - details1.vertexCount; });
                 break;
 
             case SortType.DependencySort:
@@ -441,10 +457,10 @@ public class AssetsChecker : EditorWindow
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
 
-            GUILayout.Box(AssetPreview.GetAssetPreview(mat.material), GUILayout.Width(50), GUILayout.Height(50));
-            if (GUILayout.Button(new GUIContent(mat.material.name, mat.material.name), GUILayout.Width(150), GUILayout.Height(50)))
+            GUILayout.Box(mat.preview, GUILayout.Width(50), GUILayout.Height(50));
+            if (GUILayout.Button(new GUIContent(mat.name, mat.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = mat.material;
+                Selection.activeObject = (Material)AssetDatabase.LoadAssetAtPath(mat.path, typeof(Material));
             }
             //GUILayout.Label(AssetDatabase.GetAssetPath(mat.material), GUILayout.Width(150), GUILayout.Height(50));
             GUILayout.EndHorizontal();
@@ -463,17 +479,25 @@ public class AssetsChecker : EditorWindow
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
 
-            GUILayout.Box(AssetPreview.GetAssetPreview(tex.texture), GUILayout.Width(50), GUILayout.Height(50));
-            if (GUILayout.Button(new GUIContent(tex.texture.name, tex.texture.name), GUILayout.Width(150), GUILayout.Height(50)))
+            GUILayout.Box(tex.preview, GUILayout.Width(50), GUILayout.Height(50));
+            if (GUILayout.Button(new GUIContent(tex.name, tex.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = tex.texture;
+                Selection.activeObject = AssetDatabase.LoadAssetAtPath(tex.path, typeof(Texture));
             }
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail(typeof(Material));
             if (GUILayout.Button(new GUIContent(tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials"), GUILayout.Width(60), GUILayout.Height(50)))
             {
-                Selection.objects = tex.FoundInMaterials.ToArray();
+                List<Object> objects = new List<Object>();
+                Object obj = null;
+                foreach (string path in tex.FoundInMaterials)
+                {
+                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(Material));
+                    if (obj != null)
+                        objects.Add(obj);
+                }
+                Selection.objects = objects.ToArray();
             }
-            GUILayout.Box(tex.texture.width.ToString() + " x " + tex.texture.height.ToString() + "\n" +
+            GUILayout.Box(tex.width.ToString() + " x " + tex.height.ToString() + "\n" +
             EditorUtility.FormatBytes(tex.memSizeBytes) + "\n"
 
             , GUILayout.Width(120), GUILayout.Height(50));
@@ -492,12 +516,12 @@ public class AssetsChecker : EditorWindow
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
 
-            GUILayout.Box(AssetPreview.GetAssetPreview(mes.mesh), GUILayout.Width(50), GUILayout.Height(50));
-            if (GUILayout.Button(new GUIContent(mes.mesh.name, mes.mesh.name), GUILayout.Width(150), GUILayout.Height(50)))
+            GUILayout.Box(mes.preview, GUILayout.Width(50), GUILayout.Height(50));
+            if (GUILayout.Button(new GUIContent(mes.name, mes.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = mes.mesh;
+                Selection.activeObject = AssetDatabase.LoadAssetAtPath(mes.path, typeof(Mesh));
             }
-            GUILayout.Box(mes.mesh.vertexCount.ToString() + " vertices\n" + mes.mesh.triangles.Length + " Traingles\n", GUILayout.Width(100), GUILayout.Height(50));
+            GUILayout.Box(mes.vertexCount.ToString() + " vertices\n" + mes.triangles + " Traingles\n", GUILayout.Width(100), GUILayout.Height(50));
 
             GUILayout.EndHorizontal();
         }
@@ -517,14 +541,22 @@ public class AssetsChecker : EditorWindow
 
             Texture2D iconShader = AssetPreview.GetMiniTypeThumbnail(typeof(Shader));
             GUILayout.Box(iconShader, GUILayout.Width(50), GUILayout.Height(50));
-            if (GUILayout.Button(new GUIContent(sdr.shader.name, sdr.shader.name), GUILayout.Width(150), GUILayout.Height(50)))
+            if (GUILayout.Button(new GUIContent(sdr.name, sdr.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = sdr.shader;
+                Selection.activeObject = AssetDatabase.LoadAssetAtPath(sdr.path, typeof(Shader));
             }
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail(typeof(Material));
             if (GUILayout.Button(new GUIContent(sdr.FoundInMaterials.Count.ToString(), iconMaterials, "Materials"), GUILayout.Width(60), GUILayout.Height(50)))
             {
-                Selection.objects = sdr.FoundInMaterials.ToArray();
+                List<Object> objects = new List<Object>();
+                Object obj = null;
+                foreach (string path in sdr.FoundInMaterials)
+                {
+                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(Material));
+                    if (obj != null)
+                        objects.Add(obj);
+                }
+                Selection.objects = objects.ToArray();
             }
 
             GUILayout.EndHorizontal();
@@ -541,10 +573,10 @@ public class AssetsChecker : EditorWindow
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
 
-            GUILayout.Box(AssetPreview.GetAssetPreview(snd.clip), GUILayout.Width(50), GUILayout.Height(50));
-            if (GUILayout.Button(new GUIContent(snd.clip.name, snd.clip.name), GUILayout.Width(150), GUILayout.Height(50)))
+            GUILayout.Box(snd.preview, GUILayout.Width(50), GUILayout.Height(50));
+            if (GUILayout.Button(new GUIContent(snd.name, snd.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = snd.clip;
+                Selection.activeObject = AssetDatabase.LoadAssetAtPath(snd.path, typeof(AudioClip));
             }
             GUILayout.EndHorizontal();
         }
@@ -563,9 +595,9 @@ public class AssetsChecker : EditorWindow
 
             Texture2D iconScript = AssetPreview.GetMiniTypeThumbnail(typeof(MonoScript));
             GUILayout.Box(iconScript, GUILayout.Width(50), GUILayout.Height(50));
-            if (GUILayout.Button(new GUIContent(scp.script.name, scp.script.name), GUILayout.Width(150), GUILayout.Height(50)))
+            if (GUILayout.Button(new GUIContent(scp.name, scp.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = scp.script;
+                Selection.activeObject = AssetDatabase.LoadAssetAtPath(scp.path, typeof(MonoScript));
             }
             GUILayout.EndHorizontal();
         }
@@ -591,177 +623,210 @@ public class AssetsChecker : EditorWindow
 
     void checkResources()
     {
+        string[] paths = null;
         Material[] materials = { };
 
         // TODO: inputPathList从未被使用，一直使用的是当前的inputPath
-        materials = GetFiles<Material>(inputPath, searchOption);
+        materials = GetFiles<Material>(inputPath, searchOption, out paths);
 
-        foreach (Material material in materials)
+        for (int i = 0; i < materials.Length; i++)
         {
+            Material material = materials[i];
             MaterialDetails tMaterialDetails = new MaterialDetails();
-            tMaterialDetails.material = material;
+            tMaterialDetails.FoundInGameObjects = new List<string>();
+            tMaterialDetails.name = material.name;
+            tMaterialDetails.path = paths[i];
+            tMaterialDetails.preview = AssetPreview.GetAssetPreview(material);
             AllMaterials.Add(tMaterialDetails);
         }
 
         //TODO: 目前只会找到有material引用的Texture和Shader，这样做不符合我们找到冗余(未引用)资源的目的
 
         //找到material使用的texture和shader
-        foreach (MaterialDetails tMaterialDetails in AllMaterials)
+        foreach (string path in paths)
         {
-            Material tMaterial = tMaterialDetails.material;
-            foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] { tMaterial }))
+            foreach (string p in AssetDatabase.GetDependencies(path))
             {
-                if (obj is Texture)
+                Texture tTexture = (Texture)AssetDatabase.LoadAssetAtPath(p, typeof(Texture));
+                if (tTexture != null)
                 {
-                    Texture tTexture = obj as Texture;
-                    if (tTexture != null)
+                    int check = 0;
+                    foreach (TextureDetails details in AllTextures)
                     {
-                        int check = 0;
-                        foreach (TextureDetails details in AllTextures)
+                        if (details.path == p)
                         {
-                            if (details.texture == tTexture)
-                            {
-                                check = 1;
-                                details.FoundInMaterials.Add(tMaterial);
-                                break;
-                            }
-                        }
-                        if (check == 0)
-                        {
-                            TextureDetails tTextureDetails = new TextureDetails();
-                            tTextureDetails.texture = tTexture;
-                            AllTextures.Add(tTextureDetails);
-                            tTextureDetails.FoundInMaterials.Add(tMaterial);
+                            check = 1;
+                            details.FoundInMaterials.Add(path);
+                            break;
                         }
                     }
+                    if (check == 0)
+                    {
+                        TextureDetails tTextureDetails = new TextureDetails();
+                        tTextureDetails.FoundInMaterials = new List<string>();
+                        tTextureDetails.name = tTexture.name;
+                        tTextureDetails.path = p;
+                        tTextureDetails.preview = AssetPreview.GetAssetPreview(tTexture);
+                        tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTexture);
+                        tTextureDetails.width = tTexture.width;
+                        tTextureDetails.height = tTexture.height;
+                        tTextureDetails.FoundInMaterials.Add(path);
+                        AllTextures.Add(tTextureDetails);
+                    }
                 }
-                if (obj is Shader)
+                else
                 {
-                    Shader tShader = obj as Shader;
+                    Shader tShader = (Shader)AssetDatabase.LoadAssetAtPath(p, typeof(Shader));
                     if (tShader != null)
                     {
                         int check = 0;
                         foreach (ShaderDetails details in AllShaders)
                         {
-                            if (details.shader == tShader)
+                            if (details.path == p)
                             {
                                 check = 1;
-                                details.FoundInMaterials.Add(tMaterial);
+                                details.FoundInMaterials.Add(path);
                                 break;
                             }
                         }
                         if (check == 0)
                         {
                             ShaderDetails tShaderDetails = new ShaderDetails();
-                            tShaderDetails.shader = tShader;
+                            tShaderDetails.FoundInMaterials = new List<string>();
+                            tShaderDetails.FoundInGameObjects = new List<string>();
+                            tShaderDetails.name = tShader.name;
+                            tShaderDetails.path = p;
+                            tShaderDetails.FoundInMaterials.Add(path);
                             AllShaders.Add(tShaderDetails);
-                            tShaderDetails.FoundInMaterials.Add(tMaterial);
                         }
                     }
                 }
             }
         }
 
-        Mesh[] meshes = { };
-        meshes = GetFiles<Mesh>(inputPath, searchOption);
 
-        foreach (Mesh mesh in meshes)
+        Mesh[] meshes = { };
+        meshes = GetFiles<Mesh>(inputPath, searchOption, out paths);
+
+        for (int i = 0; i < meshes.Length; i++)
         {
+            Mesh mesh = meshes[i];
             MeshDetails tMeshDetails = new MeshDetails();
-            tMeshDetails.mesh = mesh;
+            tMeshDetails.FoundInGameObjects = new List<string>();
+            tMeshDetails.name = mesh.name;
+            tMeshDetails.path = paths[i];
+            tMeshDetails.preview = AssetPreview.GetAssetPreview(mesh);
+            tMeshDetails.vertexCount = mesh.vertexCount;
+            tMeshDetails.triangles = mesh.triangles.Length;
             AllMeshes.Add(tMeshDetails);
         }
 
         AudioClip[] clips = { };
-        clips = GetFiles<AudioClip>(inputPath, searchOption);
+        clips = GetFiles<AudioClip>(inputPath, searchOption, out paths);
 
-        foreach (AudioClip clip in clips)
+        for (int i = 0; i < clips.Length; i++)
         {
+            AudioClip clip = clips[i];
             SoundDetails tSoundDetails = new SoundDetails();
-            tSoundDetails.clip = clip;
+            tSoundDetails.FoundInGameObjects = new List<string>();
+            tSoundDetails.name = clip.name;
+            tSoundDetails.path = paths[i];
+            tSoundDetails.preview = AssetPreview.GetAssetPreview(clip);
             AllSounds.Add(tSoundDetails);
         }
 
         MonoScript[] scripts = { };
-        scripts = GetFiles<MonoScript>(inputPath, searchOption);
+        scripts = GetFiles<MonoScript>(inputPath, searchOption, out paths);
 
-        foreach (MonoScript script in scripts)
+        for (int i = 0; i < scripts.Length; i++)
         {
+            MonoScript script = scripts[i];
             ScriptDetails tScriptDetails = new ScriptDetails();
-            tScriptDetails.script = script;
+            tScriptDetails.FoundInGameObjects = new List<string>();
+            tScriptDetails.name = script.name;
+            tScriptDetails.path = paths[i];
             AllScripts.Add(tScriptDetails);
         }
 
-        GameObject[] gos = GetFiles<GameObject>(inputPath, searchOption);
+        GameObject[] gos = GetFiles<GameObject>(inputPath, searchOption, out paths);
 
-        foreach (GameObject go in gos)
+        foreach (string path in paths)
         {
-            foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] { go }))
+            foreach (string p in AssetDatabase.GetDependencies(path))
             {
-
-                if (obj is AudioClip)
+                AudioClip clip = (AudioClip)AssetDatabase.LoadAssetAtPath(p, typeof(AudioClip));
+                if (clip != null)
                 {
-                    AudioClip clip = obj as AudioClip;
-
                     int check = 1;
                     foreach (SoundDetails details in AllSounds)
                     {
-                        if (details.clip == clip)
+                        if (details.path == p)
                         {
                             check = 0;
+                            details.FoundInGameObjects.Add(path);
                             break;
                         }
                     }
+
                     if (check == 1)
                     {
                         SoundDetails tSoundDetails = new SoundDetails();
-                        tSoundDetails.clip = clip;
+                        tSoundDetails.FoundInGameObjects = new List<string>();
+                        tSoundDetails.name = clip.name;
+                        tSoundDetails.path = p;
+                        tSoundDetails.preview = AssetPreview.GetAssetPreview(clip);
+                        tSoundDetails.FoundInGameObjects.Add(path);
                         AllSounds.Add(tSoundDetails);
                     }
                 }
-                if (obj is MonoScript)
+                else
                 {
-                    MonoScript script = obj as MonoScript;
-                    Debug.Log(script);
-                    int check = 1;
-                    foreach (ScriptDetails details in AllScripts)
+                    MonoScript script = (MonoScript)AssetDatabase.LoadAssetAtPath(p, typeof(MonoScript));
+                    if (script != null)
                     {
-                        if (details.script == script)
+                        int check = 1;
+                        foreach (ScriptDetails details in AllScripts)
                         {
-                            check = 0;
-                            break;
+                            if (details.path == p)
+                            {
+                                check = 0;
+                                details.FoundInGameObjects.Add(path);
+                                break;
+                            }
                         }
-                    }
-                    if (check == 1)
-                    {
-                        ScriptDetails tScriptDetails = new ScriptDetails();
-                        tScriptDetails.script = script;
-                        AllScripts.Add(tScriptDetails);
+                        if (check == 1)
+                        {
+                            ScriptDetails tScriptDetails = new ScriptDetails();
+                            tScriptDetails.FoundInGameObjects = new List<string>();
+                            tScriptDetails.name = script.name;
+                            tScriptDetails.path = p;
+                            tScriptDetails.FoundInGameObjects.Add(path);
+                            AllScripts.Add(tScriptDetails);
+                        }
                     }
                 }
             }
-
         }
 
         foreach (TextureDetails tTextureDetails in AllTextures)
         {
-            tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTextureDetails.texture);
             TotalTextureMemory += tTextureDetails.memSizeBytes;
         }
 
         foreach (MeshDetails tMeshDetails in AllMeshes)
         {
-            TotalMeshVertices += tMeshDetails.mesh.vertexCount;
+            TotalMeshVertices += tMeshDetails.vertexCount;
         }
 
     }
 
     // 根据searchOption找到当前目录下全部文件，或当前目录下及子目录下的所有文件
 
-    private T[] GetFiles<T>(string path, SearchOption option)
+    private T[] GetFiles<T>(string path, SearchOption option, out string[] paths)
         where T : UnityEngine.Object
     {
         List<T> al = new List<T>();
+        List<string> pl = new List<string>();
 
         string shortPath = "";
         if (path.StartsWith("Assets", StringComparison.CurrentCultureIgnoreCase))
@@ -804,7 +869,10 @@ public class AssetsChecker : EditorWindow
                     T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
 
                     if (t != null)
+                    {
                         al.Add(t);
+                        pl.Add(localPath);
+                    }
                 }
             }
 
@@ -821,6 +889,7 @@ public class AssetsChecker : EditorWindow
             Debug.LogWarning("AssetsChecker: " + path + " not start with Assets!");
         }
 
+        paths = pl.ToArray();
         return al.ToArray();
     }
 
