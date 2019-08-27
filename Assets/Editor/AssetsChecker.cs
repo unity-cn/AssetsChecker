@@ -130,6 +130,12 @@ public class ScriptDetails
 
 public class AssetsChecker : EditorWindow
 {
+    private struct AssetDetails
+    {
+        string name;
+        string path;
+        Texture2D preview;
+    }
 
     static int MinWidth = 480;
     int TotalTextureMemory = 0;
@@ -140,7 +146,7 @@ public class AssetsChecker : EditorWindow
     ArrayList inputPathList = new ArrayList();
     int CurrentPath = 0;
 
-    Color defColor;
+    //Color defColor;
 
     Vector2 textureListScrollPos = new Vector2(0, 0);
     Vector2 materialListScrollPos = new Vector2(0, 0);
@@ -181,7 +187,7 @@ public class AssetsChecker : EditorWindow
     void OnGUI()
     {
 
-        defColor = GUI.color;
+        //defColor = GUI.color;
 
 
         //替换图标用的代码
@@ -348,7 +354,7 @@ public class AssetsChecker : EditorWindow
 
         // 显示手动刷新资源列表的按钮，并处理输入
 
-        // 注：这是一个单向操作，重复点击也不能使checkOptions回到1
+        // 注：这是一个单向操作，重复点击也不能使searchOptions回到1
         // TODO: 需要在显示上做一些修改
 
         if (GUILayout.Button("Check all assets", GUILayout.Width(100), GUILayout.Height(30)))
@@ -686,7 +692,7 @@ public class AssetsChecker : EditorWindow
             AllScripts.Add(tScriptDetails);
         }
 
-        GameObject[] gos = GetFiles<GameObject>(inputPath, SearchOption.AllDirectories);
+        GameObject[] gos = GetFiles<GameObject>(inputPath, searchOption);
 
         foreach (GameObject go in gos)
         {
@@ -758,7 +764,7 @@ public class AssetsChecker : EditorWindow
         List<T> al = new List<T>();
 
         string shortPath = "";
-        if (path.StartsWith("Assets", StringComparison.CurrentCulture))
+        if (path.StartsWith("Assets", StringComparison.CurrentCultureIgnoreCase))
         {
             if (path.Length > "Assets".Length)
                 shortPath = path.Substring("Assets".Length);
@@ -767,12 +773,30 @@ public class AssetsChecker : EditorWindow
 
             if (Directory.Exists(fullPath))
             {
-                string[] fileEntries = Directory.GetFiles(fullPath, "*", option);
+                // (剪枝)根据T只检索对应后缀名的文件
+                string searchPattern = "*";
+                Type typeParameterType = typeof(T);
+                if (typeParameterType == typeof(GameObject))
+                {
+                    searchPattern = "*.prefab";
+                }
+                else if (typeParameterType == typeof(MonoScript))
+                {
+                    searchPattern = "*.cs";
+                }
+                else if (typeParameterType == typeof(Material))
+                {
+                    searchPattern = "*.mat";
+                }
+                else if (typeParameterType == typeof(AudioClip))
+                {
+                    searchPattern = "*.mp3*.ogg*.wav*.aiff*.aif*.mod*.it*.s3m*.xm";
+                }
+
+                string[] fileEntries = Directory.GetFiles(fullPath, searchPattern, option);
 
                 foreach (string filePath in fileEntries)
                 {
-                    // TODO: (剪枝)排除.meta结尾的文件，排除文件夹，甚至根据T只检索对应后缀名的文件，也许可以在正则表达式上面做文章
-
                     string temp = filePath.Replace("\\", "/");
 
                     string localPath = "Assets" + temp.Substring(Application.dataPath.Length);
