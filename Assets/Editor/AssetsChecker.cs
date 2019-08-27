@@ -134,7 +134,7 @@ public class AssetsChecker : EditorWindow
     static int MinWidth = 480;
     int TotalTextureMemory = 0;
     int TotalMeshVertices = 0;
-    int checkOption = 1; // 1代表仅检查该目录下的文件(不包括子目录)，2代表检查该目录下的所有文件(包括子目录)
+    SearchOption searchOption = SearchOption.TopDirectoryOnly; // 仅检查该目录下的文件(不包括子目录)，或检查该目录下的所有文件(包括子目录)
 
     string inputPath = "Assets";
     ArrayList inputPathList = new ArrayList();
@@ -306,7 +306,7 @@ public class AssetsChecker : EditorWindow
         if (GUILayout.Button(new GUIContent(iconPlus, "Add to list"), GUILayout.Width(30), GUILayout.Height(30)))
         {
             int check = 0;
-            if (checkOption == 1)
+            if (searchOption == SearchOption.TopDirectoryOnly)
             {
                 // 和原列表中的元素进行一一比较，避免重复添加
                 foreach (string s in inputPathList)
@@ -333,7 +333,7 @@ public class AssetsChecker : EditorWindow
         if (GUILayout.Button(new GUIContent(iconRefresh, "Clear list"), GUILayout.Width(30), GUILayout.Height(30)))
         {
             clearResources();
-            checkOption = 1;
+            searchOption = SearchOption.TopDirectoryOnly;
         }
 
         GUILayout.EndHorizontal();
@@ -353,9 +353,9 @@ public class AssetsChecker : EditorWindow
 
         if (GUILayout.Button("Check all assets", GUILayout.Width(100), GUILayout.Height(30)))
         {
-            if (checkOption != 2)
+            if (searchOption != SearchOption.AllDirectories)
             {
-                checkOption = 2;
+                searchOption = SearchOption.AllDirectories;
                 checkResources();
             }
         }
@@ -588,14 +588,7 @@ public class AssetsChecker : EditorWindow
         Material[] materials = { };
 
         // TODO: inputPathList从未被使用，一直使用的是当前的inputPath
-        if (checkOption == 1)
-        {
-            materials = GetAtPath<Material>(inputPath);
-        }
-        if (checkOption == 2)
-        {
-            materials = GetAllFiles<Material>(inputPath);
-        }
+        materials = GetFiles<Material>(inputPath, searchOption);
 
         foreach (Material material in materials)
         {
@@ -664,14 +657,7 @@ public class AssetsChecker : EditorWindow
         }
 
         Mesh[] meshes = { };
-        if (checkOption == 1)
-        {
-            meshes = GetAtPath<Mesh>(inputPath);
-        }
-        if (checkOption == 2)
-        {
-            meshes = GetAllFiles<Mesh>(inputPath);
-        }
+        meshes = GetFiles<Mesh>(inputPath, searchOption);
 
         foreach (Mesh mesh in meshes)
         {
@@ -681,14 +667,7 @@ public class AssetsChecker : EditorWindow
         }
 
         AudioClip[] clips = { };
-        if (checkOption == 1)
-        {
-            clips = GetAtPath<AudioClip>(inputPath);
-        }
-        if (checkOption == 2)
-        {
-            clips = GetAllFiles<AudioClip>(inputPath);
-        }
+        clips = GetFiles<AudioClip>(inputPath, searchOption);
 
         foreach (AudioClip clip in clips)
         {
@@ -698,14 +677,7 @@ public class AssetsChecker : EditorWindow
         }
 
         MonoScript[] scripts = { };
-        if (checkOption == 1)
-        {
-            scripts = GetAtPath<MonoScript>(inputPath);
-        }
-        if (checkOption == 2)
-        {
-            scripts = GetAllFiles<MonoScript>(inputPath);
-        }
+        scripts = GetFiles<MonoScript>(inputPath, searchOption);
 
         foreach (MonoScript script in scripts)
         {
@@ -714,7 +686,7 @@ public class AssetsChecker : EditorWindow
             AllScripts.Add(tScriptDetails);
         }
 
-        GameObject[] gos = GetAllFiles<GameObject>(inputPath);
+        GameObject[] gos = GetFiles<GameObject>(inputPath, SearchOption.AllDirectories);
 
         foreach (GameObject go in gos)
         {
@@ -778,15 +750,15 @@ public class AssetsChecker : EditorWindow
 
     }
 
-    // 找到当前目录下全部文件
+    // 根据searchOption找到当前目录下全部文件，或当前目录下及子目录下的所有文件
 
-    private T[] GetAtPath<T>(string path)
+    private T[] GetFiles<T>(string path, SearchOption option)
         where T : UnityEngine.Object
     {
         List<T> al = new List<T>();
 
         string shortPath = "";
-        if (path.StartsWith("Assets"))
+        if (path.StartsWith("Assets", StringComparison.CurrentCulture))
         {
             if (path.Length > "Assets".Length)
                 shortPath = path.Substring("Assets".Length);
@@ -795,7 +767,7 @@ public class AssetsChecker : EditorWindow
 
             if (Directory.Exists(fullPath))
             {
-                string[] fileEntries = Directory.GetFiles(fullPath, "*", SearchOption.TopDirectoryOnly);
+                string[] fileEntries = Directory.GetFiles(fullPath, "*", option);
 
                 foreach (string filePath in fileEntries)
                 {
@@ -803,56 +775,7 @@ public class AssetsChecker : EditorWindow
 
                     string temp = filePath.Replace("\\", "/");
 
-                    string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
-
-                    T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
-
-                    if (t != null)
-                        al.Add(t);
-                }
-            }
-
-            // (异常处理)如果path不存在会报错
-            else
-            {
-                Debug.LogWarning("AssetsChecker: " + fullPath + " not exist!");
-            }
-        }
-
-        // (异常处理)如果path不以Assets开头会报错
-        else
-        {
-            Debug.LogWarning("AssetsChecker: " + path + " not start with Assets!");
-        }
-
-        return al.ToArray();
-    }
-
-    // 递归找到目录及子目录下全部文件
-
-    private T[] GetAllFiles<T>(string path)
-        where T : UnityEngine.Object
-    {
-        List<T> al = new List<T>();
-
-        string shortPath = "";
-        if (path.StartsWith("Assets"))
-        {
-            if (path.Length > "Assets".Length)
-                shortPath = path.Substring("Assets".Length);
-
-            string fullPath = Application.dataPath + shortPath;
-            if (Directory.Exists(fullPath))
-            {
-                string[] fileEntries = Directory.GetFiles(fullPath, "*", SearchOption.AllDirectories);
-
-                foreach (string filePath in fileEntries)
-                {
-                    // TODO: (剪枝)排除.meta结尾的文件，排除文件夹，甚至根据T只检索对应后缀名的文件，也许可以在正则表达式上面做文章
-
-                    string temp = filePath.Replace("\\", "/");
-
-                    string localPath = "Assets" + filePath.Substring(Application.dataPath.Length);
+                    string localPath = "Assets" + temp.Substring(Application.dataPath.Length);
 
                     T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
 
