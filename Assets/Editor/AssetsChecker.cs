@@ -666,8 +666,7 @@ public class AssetsChecker : EditorWindow
             tMaterialDetails.name = material.name;
             tMaterialDetails.path = paths[i];
 
-            Texture2D preview = null;
-            preview = AssetPreview.GetAssetPreview(material);
+            Texture2D preview = AssetPreview.GetAssetPreview(material);
             tMaterialDetails.preview = new Texture2D(preview.width, preview.height);
             tMaterialDetails.preview.SetPixels32(preview.GetPixels32());
             tMaterialDetails.preview.Apply();
@@ -681,36 +680,70 @@ public class AssetsChecker : EditorWindow
         //找到material使用的texture和shader
         foreach (string path in paths)
         {
-            foreach (string p in AssetDatabase.GetDependencies(path))
+            Material material = (Material)AssetDatabase.LoadAssetAtPath(path, typeof(Material));
+            foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] { material }))
             {
-                Texture tTexture = (Texture)AssetDatabase.LoadAssetAtPath(p, typeof(Texture));
-                if (tTexture != null)
+                string p = AssetDatabase.GetAssetPath(obj);
+
+                if (obj is Texture)
                 {
-                    int check = 0;
-                    foreach (TextureDetails details in AllTextures)
+                    Texture tTexture = (Texture)AssetDatabase.LoadAssetAtPath(p, typeof(Texture));
+                    if (tTexture != null)
                     {
-                        if (details.path == p)
+                        int check = 0;
+                        foreach (TextureDetails details in AllTextures)
                         {
-                            check = 1;
-                            details.FoundInMaterials.Add(path);
-                            break;
+                            if (details.path == p)
+                            {
+                                check = 1;
+                                details.FoundInMaterials.Add(path);
+                                break;
+                            }
+                        }
+                        if (check == 0)
+                        {
+                            TextureDetails tTextureDetails = new TextureDetails();
+                            tTextureDetails.FoundInMaterials = new List<string>();
+                            tTextureDetails.name = tTexture.name;
+                            tTextureDetails.path = p;
+                            tTextureDetails.preview = AssetPreview.GetMiniThumbnail(tTexture);
+                            tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTexture);
+                            tTextureDetails.width = tTexture.width;
+                            tTextureDetails.height = tTexture.height;
+                            tTextureDetails.FoundInMaterials.Add(path);
+                            AllTextures.Add(tTextureDetails);
                         }
                     }
-                    if (check == 0)
+                    else
                     {
-                        TextureDetails tTextureDetails = new TextureDetails();
-                        tTextureDetails.FoundInMaterials = new List<string>();
-                        tTextureDetails.name = tTexture.name;
-                        tTextureDetails.path = p;
-                        tTextureDetails.preview = AssetPreview.GetMiniThumbnail(tTexture);
-                        tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTexture);
-                        tTextureDetails.width = tTexture.width;
-                        tTextureDetails.height = tTexture.height;
-                        tTextureDetails.FoundInMaterials.Add(path);
-                        AllTextures.Add(tTextureDetails);
+                        tTexture = (Texture)obj;
+                        int check = 0;
+                        foreach (TextureDetails details in AllTextures)
+                        {
+                            if (details.path == "" && details.name == tTexture.name)
+                            {
+                                check = 1;
+                                details.FoundInMaterials.Add(path);
+                                break;
+                            }
+                        }
+                        if (check == 0)
+                        {
+                            TextureDetails tTextureDetails = new TextureDetails();
+                            tTextureDetails.FoundInMaterials = new List<string>();
+                            tTextureDetails.name = tTexture.name;
+                            tTextureDetails.path = "";
+                            tTextureDetails.preview = AssetPreview.GetMiniThumbnail(tTexture);
+                            tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTexture);
+                            tTextureDetails.width = tTexture.width;
+                            tTextureDetails.height = tTexture.height;
+                            tTextureDetails.FoundInMaterials.Add(path);
+                            AllTextures.Add(tTextureDetails);
+                        }
                     }
                 }
-                else
+
+                else if (obj is Shader)
                 {
                     Shader tShader = (Shader)AssetDatabase.LoadAssetAtPath(p, typeof(Shader));
                     if (tShader != null)
@@ -732,6 +765,31 @@ public class AssetsChecker : EditorWindow
                             tShaderDetails.FoundInGameObjects = new List<string>();
                             tShaderDetails.name = tShader.name;
                             tShaderDetails.path = p;
+                            tShaderDetails.FoundInMaterials.Add(path);
+                            AllShaders.Add(tShaderDetails);
+                        }
+                    }
+
+                    else
+                    {
+                        tShader = (Shader)obj;
+                        int check = 0;
+                        foreach (ShaderDetails details in AllShaders)
+                        {
+                            if (details.path == "" && details.name == tShader.name)
+                            {
+                                check = 1;
+                                details.FoundInMaterials.Add(path);
+                                break;
+                            }
+                        }
+                        if (check == 0)
+                        {
+                            ShaderDetails tShaderDetails = new ShaderDetails();
+                            tShaderDetails.FoundInMaterials = new List<string>();
+                            tShaderDetails.FoundInGameObjects = new List<string>();
+                            tShaderDetails.name = tShader.name;
+                            tShaderDetails.path = "";
                             tShaderDetails.FoundInMaterials.Add(path);
                             AllShaders.Add(tShaderDetails);
                         }
