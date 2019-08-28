@@ -5,6 +5,7 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using Object = UnityEngine.Object;
 
 // XXXDetails: 用于储存XXX类型资源的信息
@@ -664,7 +665,13 @@ public class AssetsChecker : EditorWindow
             tMaterialDetails.FoundInGameObjects = new List<string>();
             tMaterialDetails.name = material.name;
             tMaterialDetails.path = paths[i];
-            tMaterialDetails.preview = AssetPreview.GetAssetPreview(material);
+
+            Texture2D preview = null;
+            preview = AssetPreview.GetAssetPreview(material);
+            tMaterialDetails.preview = new Texture2D(preview.width, preview.height);
+            tMaterialDetails.preview.SetPixels32(preview.GetPixels32());
+            tMaterialDetails.preview.Apply();
+
             AllMaterials.Add(tMaterialDetails);
         }
 
