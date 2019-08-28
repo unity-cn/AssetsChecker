@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using Object = UnityEngine.Object;
 
-// TODO: 目前FoundInGameObjects未使用
-
 // XXXDetails: 用于储存XXX类型资源的信息
 
 public class AssetsChecker : EditorWindow
@@ -578,6 +576,21 @@ public class AssetsChecker : EditorWindow
             {
                 Selection.activeObject = AssetDatabase.LoadAssetAtPath(snd.path, typeof(AudioClip));
             }
+
+            Texture2D iconGameObjects = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
+            if (GUILayout.Button(new GUIContent(snd.FoundInGameObjects.Count.ToString(), iconGameObjects, "GameObjects"), GUILayout.Width(60), GUILayout.Height(50)))
+            {
+                List<Object> objects = new List<Object>();
+                Object obj = null;
+                foreach (string path in snd.FoundInGameObjects)
+                {
+                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject));
+                    if (obj != null)
+                        objects.Add(obj);
+                }
+                Selection.objects = objects.ToArray();
+            }
+
             GUILayout.EndHorizontal();
         }
 
@@ -599,6 +612,21 @@ public class AssetsChecker : EditorWindow
             {
                 Selection.activeObject = AssetDatabase.LoadAssetAtPath(scp.path, typeof(MonoScript));
             }
+
+            Texture2D iconGameObjects = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
+            if (GUILayout.Button(new GUIContent(scp.FoundInGameObjects.Count.ToString(), iconGameObjects, "GameObjects"), GUILayout.Width(60), GUILayout.Height(50)))
+            {
+                List<Object> objects = new List<Object>();
+                Object obj = null;
+                foreach (string path in scp.FoundInGameObjects)
+                {
+                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject));
+                    if (obj != null)
+                        objects.Add(obj);
+                }
+                Selection.objects = objects.ToArray();
+            }
+
             GUILayout.EndHorizontal();
         }
         EditorGUILayout.EndScrollView();
@@ -636,11 +664,12 @@ public class AssetsChecker : EditorWindow
             tMaterialDetails.FoundInGameObjects = new List<string>();
             tMaterialDetails.name = material.name;
             tMaterialDetails.path = paths[i];
-            tMaterialDetails.preview = AssetPreview.GetMiniThumbnail(material);
+            tMaterialDetails.preview = AssetPreview.GetAssetPreview(material);
             AllMaterials.Add(tMaterialDetails);
         }
 
-        //TODO: 目前只会找到有material引用的Texture和Shader，这样做不符合我们找到冗余(未引用)资源的目的
+        //目前只会找到有Material引用的自定义Texture和Shader
+        //TODO: 对于被引用的默认Texture和Shader也进行显示
 
         //找到material使用的texture和shader
         foreach (string path in paths)
@@ -747,6 +776,8 @@ public class AssetsChecker : EditorWindow
             tScriptDetails.path = paths[i];
             AllScripts.Add(tScriptDetails);
         }
+
+        // TODO: 目前FoundInGameObjects没有对所有类型使用
 
         GameObject[] gos = GetFiles<GameObject>(inputPath, searchOption, out paths);
 
