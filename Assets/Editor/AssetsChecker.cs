@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 
 public class AssetsChecker : EditorWindow
 {
-    private struct MaterialDetails
+    private class MaterialDetails
     {
         public string name;
         public string path;
@@ -21,7 +21,7 @@ public class AssetsChecker : EditorWindow
         public List<string> FoundInGameObjects;
     }
 
-    private struct TextureDetails
+    private class TextureDetails
     {
         public string name;
         public string path;
@@ -115,7 +115,7 @@ public class AssetsChecker : EditorWindow
         }
     };
 
-    private struct MeshDetails
+    private class MeshDetails
     {
         public string name;
         public string path;
@@ -127,7 +127,7 @@ public class AssetsChecker : EditorWindow
         public List<string> FoundInGameObjects;
     };
 
-    private struct ShaderDetails
+    private class ShaderDetails
     {
         public string name;
         public string path;
@@ -136,7 +136,7 @@ public class AssetsChecker : EditorWindow
         public List<string> FoundInMaterials;
     };
 
-    public struct SoundDetails
+    public class SoundDetails
     {
         public string name;
         public string path;
@@ -145,7 +145,7 @@ public class AssetsChecker : EditorWindow
         public List<string> FoundInGameObjects;
     };
 
-    public struct ScriptDetails
+    public class ScriptDetails
     {
         public string name;
         public string path;
@@ -636,7 +636,7 @@ public class AssetsChecker : EditorWindow
             tMaterialDetails.FoundInGameObjects = new List<string>();
             tMaterialDetails.name = material.name;
             tMaterialDetails.path = paths[i];
-            tMaterialDetails.preview = AssetPreview.GetAssetPreview(material);
+            tMaterialDetails.preview = AssetPreview.GetMiniThumbnail(material);
             AllMaterials.Add(tMaterialDetails);
         }
 
@@ -666,7 +666,7 @@ public class AssetsChecker : EditorWindow
                         tTextureDetails.FoundInMaterials = new List<string>();
                         tTextureDetails.name = tTexture.name;
                         tTextureDetails.path = p;
-                        tTextureDetails.preview = AssetPreview.GetAssetPreview(tTexture);
+                        tTextureDetails.preview = AssetPreview.GetMiniThumbnail(tTexture);
                         tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTexture);
                         tTextureDetails.width = tTexture.width;
                         tTextureDetails.height = tTexture.height;
