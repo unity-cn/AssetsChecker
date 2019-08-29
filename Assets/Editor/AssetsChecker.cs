@@ -4,8 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
+using System.Linq;
 using Object = UnityEngine.Object;
 
 // XXXDetails: 用于储存XXX类型资源的信息
@@ -158,6 +157,7 @@ public class AssetsChecker : EditorWindow
     SearchOption searchOption = SearchOption.TopDirectoryOnly; // 仅检查该目录下的文件(不包括子目录)，或检查该目录下的所有文件(包括子目录)
 
     string inputPath = "Assets";
+    const string defaultPath = "Resources/unity_builtin_extra";
     ArrayList inputPathList = new ArrayList();
     int CurrentPath = 0;
 
@@ -445,6 +445,7 @@ public class AssetsChecker : EditorWindow
     }
 
     // ListXXX：显示各种资源列表
+    // TODO: 用generic重构
 
     void ListMaterials()
     {
@@ -459,9 +460,9 @@ public class AssetsChecker : EditorWindow
             GUILayout.Box(mat.preview, GUILayout.Width(50), GUILayout.Height(50));
             if (GUILayout.Button(new GUIContent(mat.name, mat.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = (Material)AssetDatabase.LoadAssetAtPath(mat.path, typeof(Material));
+                Selection.activeObject = LoadAssetFromUniqueAssetPath<Material>(mat.path);
             }
-            //GUILayout.Label(AssetDatabase.GetAssetPath(mat.material), GUILayout.Width(150), GUILayout.Height(50));
+
             GUILayout.EndHorizontal();
         }
 
@@ -481,7 +482,7 @@ public class AssetsChecker : EditorWindow
             GUILayout.Box(tex.preview, GUILayout.Width(50), GUILayout.Height(50));
             if (GUILayout.Button(new GUIContent(tex.name, tex.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = AssetDatabase.LoadAssetAtPath(tex.path, typeof(Texture));
+                Selection.activeObject = LoadAssetFromUniqueAssetPath<Texture>(tex.path);
             }
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail(typeof(Material));
             if (GUILayout.Button(new GUIContent(tex.FoundInMaterials.Count.ToString(), iconMaterials, "Materials"), GUILayout.Width(60), GUILayout.Height(50)))
@@ -490,7 +491,7 @@ public class AssetsChecker : EditorWindow
                 Object obj = null;
                 foreach (string path in tex.FoundInMaterials)
                 {
-                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(Material));
+                    obj = LoadAssetFromUniqueAssetPath<Material>(path);
                     if (obj != null)
                         objects.Add(obj);
                 }
@@ -518,7 +519,7 @@ public class AssetsChecker : EditorWindow
             GUILayout.Box(mes.preview, GUILayout.Width(50), GUILayout.Height(50));
             if (GUILayout.Button(new GUIContent(mes.name, mes.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = AssetDatabase.LoadAssetAtPath(mes.path, typeof(Mesh));
+                Selection.activeObject = LoadAssetFromUniqueAssetPath<Mesh>(mes.path);
             }
             GUILayout.Box(mes.vertexCount.ToString() + " vertices\n" + mes.triangles + " Traingles\n", GUILayout.Width(100), GUILayout.Height(50));
 
@@ -542,7 +543,7 @@ public class AssetsChecker : EditorWindow
             GUILayout.Box(iconShader, GUILayout.Width(50), GUILayout.Height(50));
             if (GUILayout.Button(new GUIContent(sdr.name, sdr.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = AssetDatabase.LoadAssetAtPath(sdr.path, typeof(Shader));
+                Selection.activeObject = LoadAssetFromUniqueAssetPath<Shader>(sdr.path);
             }
             Texture2D iconMaterials = AssetPreview.GetMiniTypeThumbnail(typeof(Material));
             if (GUILayout.Button(new GUIContent(sdr.FoundInMaterials.Count.ToString(), iconMaterials, "Materials"), GUILayout.Width(60), GUILayout.Height(50)))
@@ -551,7 +552,7 @@ public class AssetsChecker : EditorWindow
                 Object obj = null;
                 foreach (string path in sdr.FoundInMaterials)
                 {
-                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(Material));
+                    obj = LoadAssetFromUniqueAssetPath<Material>(path);
                     if (obj != null)
                         objects.Add(obj);
                 }
@@ -575,7 +576,7 @@ public class AssetsChecker : EditorWindow
             GUILayout.Box(snd.preview, GUILayout.Width(50), GUILayout.Height(50));
             if (GUILayout.Button(new GUIContent(snd.name, snd.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = AssetDatabase.LoadAssetAtPath(snd.path, typeof(AudioClip));
+                Selection.activeObject = LoadAssetFromUniqueAssetPath<AudioClip>(snd.path);
             }
 
             Texture2D iconGameObjects = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
@@ -585,7 +586,7 @@ public class AssetsChecker : EditorWindow
                 Object obj = null;
                 foreach (string path in snd.FoundInGameObjects)
                 {
-                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject));
+                    obj = LoadAssetFromUniqueAssetPath<GameObject>(path);
                     if (obj != null)
                         objects.Add(obj);
                 }
@@ -611,7 +612,7 @@ public class AssetsChecker : EditorWindow
             GUILayout.Box(iconScript, GUILayout.Width(50), GUILayout.Height(50));
             if (GUILayout.Button(new GUIContent(scp.name, scp.name), GUILayout.Width(150), GUILayout.Height(50)))
             {
-                Selection.activeObject = AssetDatabase.LoadAssetAtPath(scp.path, typeof(MonoScript));
+                Selection.activeObject = LoadAssetFromUniqueAssetPath<MonoScript>(scp.path);
             }
 
             Texture2D iconGameObjects = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
@@ -621,7 +622,7 @@ public class AssetsChecker : EditorWindow
                 Object obj = null;
                 foreach (string path in scp.FoundInGameObjects)
                 {
-                    obj = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject));
+                    obj = LoadAssetFromUniqueAssetPath<GameObject>(path);
                     if (obj != null)
                         objects.Add(obj);
                 }
@@ -653,43 +654,42 @@ public class AssetsChecker : EditorWindow
     void checkResources()
     {
         string[] paths = null;
-        Material[] materials = { };
 
         // TODO: inputPathList从未被使用，一直使用的是当前的inputPath
-        materials = GetFiles<Material>(inputPath, searchOption, out paths);
-
-        for (int i = 0; i < materials.Length; i++)
-        {
-            Material material = materials[i];
-            MaterialDetails tMaterialDetails = new MaterialDetails();
-            tMaterialDetails.FoundInGameObjects = new List<string>();
-            tMaterialDetails.name = material.name;
-            tMaterialDetails.path = paths[i];
-
-            Texture2D preview = AssetPreview.GetAssetPreview(material);
-            tMaterialDetails.preview = new Texture2D(preview.width, preview.height);
-            tMaterialDetails.preview.SetPixels32(preview.GetPixels32());
-            tMaterialDetails.preview.Apply();
-
-            AllMaterials.Add(tMaterialDetails);
-        }
+        paths = GetFilePaths<Material>(inputPath, searchOption);
 
         //目前只会找到有Material引用的自定义Texture和Shader
-        //TODO: 对于被引用的默认Texture和Shader也进行显示
+        //对于被引用的默认Texture和Shader也进行显示
 
         //找到material使用的texture和shader
         foreach (string path in paths)
         {
             Material material = (Material)AssetDatabase.LoadAssetAtPath(path, typeof(Material));
-            foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] { material }))
+            if (material != null)
             {
-                string p = AssetDatabase.GetAssetPath(obj);
+                MaterialDetails tMaterialDetails = new MaterialDetails();
+                tMaterialDetails.FoundInGameObjects = new List<string>();
+                tMaterialDetails.name = material.name;
+                tMaterialDetails.path = path;
 
-                if (obj is Texture)
+                // 对于material的缩略图进行深拷贝
+                Texture2D preview = AssetPreview.GetAssetPreview(material);
+                tMaterialDetails.preview = new Texture2D(preview.width, preview.height);
+                tMaterialDetails.preview.SetPixels32(preview.GetPixels32());
+                tMaterialDetails.preview.Apply();
+
+                AllMaterials.Add(tMaterialDetails);
+
+                foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] { material }))
                 {
-                    Texture tTexture = (Texture)AssetDatabase.LoadAssetAtPath(p, typeof(Texture));
-                    if (tTexture != null)
+                    string p = AssetDatabase.GetAssetPath(obj);
+                    if (p == defaultPath)
+                        p = defaultPath + "::" + obj.name;
+
+                    if (obj is Texture)
                     {
+                        Texture tTexture = (Texture)obj;
+
                         int check = 0;
                         foreach (TextureDetails details in AllTextures)
                         {
@@ -714,40 +714,11 @@ public class AssetsChecker : EditorWindow
                             AllTextures.Add(tTextureDetails);
                         }
                     }
-                    else
-                    {
-                        tTexture = (Texture)obj;
-                        int check = 0;
-                        foreach (TextureDetails details in AllTextures)
-                        {
-                            if (details.path == "" && details.name == tTexture.name)
-                            {
-                                check = 1;
-                                details.FoundInMaterials.Add(path);
-                                break;
-                            }
-                        }
-                        if (check == 0)
-                        {
-                            TextureDetails tTextureDetails = new TextureDetails();
-                            tTextureDetails.FoundInMaterials = new List<string>();
-                            tTextureDetails.name = tTexture.name;
-                            tTextureDetails.path = "";
-                            tTextureDetails.preview = AssetPreview.GetMiniThumbnail(tTexture);
-                            tTextureDetails.memSizeBytes = TextureDetails.CalculateTextureSizeBytes(tTexture);
-                            tTextureDetails.width = tTexture.width;
-                            tTextureDetails.height = tTexture.height;
-                            tTextureDetails.FoundInMaterials.Add(path);
-                            AllTextures.Add(tTextureDetails);
-                        }
-                    }
-                }
 
-                else if (obj is Shader)
-                {
-                    Shader tShader = (Shader)AssetDatabase.LoadAssetAtPath(p, typeof(Shader));
-                    if (tShader != null)
+                    else if (obj is Shader)
                     {
+                        Shader tShader = (Shader)obj;
+
                         int check = 0;
                         foreach (ShaderDetails details in AllShaders)
                         {
@@ -769,82 +740,63 @@ public class AssetsChecker : EditorWindow
                             AllShaders.Add(tShaderDetails);
                         }
                     }
-
-                    else
-                    {
-                        tShader = (Shader)obj;
-                        int check = 0;
-                        foreach (ShaderDetails details in AllShaders)
-                        {
-                            if (details.path == "" && details.name == tShader.name)
-                            {
-                                check = 1;
-                                details.FoundInMaterials.Add(path);
-                                break;
-                            }
-                        }
-                        if (check == 0)
-                        {
-                            ShaderDetails tShaderDetails = new ShaderDetails();
-                            tShaderDetails.FoundInMaterials = new List<string>();
-                            tShaderDetails.FoundInGameObjects = new List<string>();
-                            tShaderDetails.name = tShader.name;
-                            tShaderDetails.path = "";
-                            tShaderDetails.FoundInMaterials.Add(path);
-                            AllShaders.Add(tShaderDetails);
-                        }
-                    }
                 }
             }
         }
 
+        paths = GetFilePaths<Mesh>(inputPath, searchOption);
 
-        Mesh[] meshes = { };
-        meshes = GetFiles<Mesh>(inputPath, searchOption, out paths);
-
-        for (int i = 0; i < meshes.Length; i++)
+        foreach (string path in paths)
         {
-            Mesh mesh = meshes[i];
-            MeshDetails tMeshDetails = new MeshDetails();
-            tMeshDetails.FoundInGameObjects = new List<string>();
-            tMeshDetails.name = mesh.name;
-            tMeshDetails.path = paths[i];
-            tMeshDetails.preview = AssetPreview.GetAssetPreview(mesh);
-            tMeshDetails.vertexCount = mesh.vertexCount;
-            tMeshDetails.triangles = mesh.triangles.Length;
-            AllMeshes.Add(tMeshDetails);
+            Mesh mesh = (Mesh)AssetDatabase.LoadAssetAtPath(path, typeof(Mesh));
+            if (mesh != null)
+            {
+                MeshDetails tMeshDetails = new MeshDetails();
+                tMeshDetails.FoundInGameObjects = new List<string>();
+                tMeshDetails.name = mesh.name;
+                tMeshDetails.path = path;
+                tMeshDetails.preview = AssetPreview.GetAssetPreview(mesh);
+                tMeshDetails.vertexCount = mesh.vertexCount;
+                tMeshDetails.triangles = mesh.triangles.Length;
+                AllMeshes.Add(tMeshDetails);
+            }
         }
 
-        AudioClip[] clips = { };
-        clips = GetFiles<AudioClip>(inputPath, searchOption, out paths);
+        paths = GetFilePaths<AudioClip>(inputPath, searchOption);
 
-        for (int i = 0; i < clips.Length; i++)
+        foreach (string path in paths)
         {
-            AudioClip clip = clips[i];
-            SoundDetails tSoundDetails = new SoundDetails();
-            tSoundDetails.FoundInGameObjects = new List<string>();
-            tSoundDetails.name = clip.name;
-            tSoundDetails.path = paths[i];
-            tSoundDetails.preview = AssetPreview.GetAssetPreview(clip);
-            AllSounds.Add(tSoundDetails);
+            AudioClip clip = (AudioClip)AssetDatabase.LoadAssetAtPath(path, typeof(AudioClip));
+            if (clip != null)
+            {
+                SoundDetails tSoundDetails = new SoundDetails();
+                tSoundDetails.FoundInGameObjects = new List<string>();
+                tSoundDetails.name = clip.name;
+                tSoundDetails.path = path;
+                tSoundDetails.preview = AssetPreview.GetAssetPreview(clip);
+                AllSounds.Add(tSoundDetails);
+            }
         }
 
-        MonoScript[] scripts = { };
-        scripts = GetFiles<MonoScript>(inputPath, searchOption, out paths);
+        paths = GetFilePaths<MonoScript>(inputPath, searchOption);
 
-        for (int i = 0; i < scripts.Length; i++)
+        foreach (string path in paths)
         {
-            MonoScript script = scripts[i];
-            ScriptDetails tScriptDetails = new ScriptDetails();
-            tScriptDetails.FoundInGameObjects = new List<string>();
-            tScriptDetails.name = script.name;
-            tScriptDetails.path = paths[i];
-            AllScripts.Add(tScriptDetails);
+            MonoScript script = (MonoScript)AssetDatabase.LoadAssetAtPath(path, typeof(MonoScript));
+            if (script != null)
+            {
+                ScriptDetails tScriptDetails = new ScriptDetails();
+                tScriptDetails.FoundInGameObjects = new List<string>();
+                tScriptDetails.name = script.name;
+                tScriptDetails.path = path;
+                AllScripts.Add(tScriptDetails);
+            }
         }
 
         // TODO: 目前FoundInGameObjects没有对所有类型使用
+        // TODO: 目前不会找到GameObject引用的自定义资源
 
-        GameObject[] gos = GetFiles<GameObject>(inputPath, searchOption, out paths);
+        paths = GetFilePaths<GameObject>(inputPath, searchOption);
 
         foreach (string path in paths)
         {
@@ -918,11 +870,10 @@ public class AssetsChecker : EditorWindow
 
     // 根据searchOption找到当前目录下全部文件，或当前目录下及子目录下的所有文件
 
-    private T[] GetFiles<T>(string path, SearchOption option, out string[] paths)
+    private string[] GetFilePaths<T>(string path, SearchOption option)
         where T : UnityEngine.Object
     {
-        List<T> al = new List<T>();
-        List<string> pl = new List<string>();
+        List<string> paths = new List<string>();
 
         string shortPath = "";
         if (path.StartsWith("Assets", StringComparison.CurrentCultureIgnoreCase))
@@ -962,13 +913,7 @@ public class AssetsChecker : EditorWindow
 
                     string localPath = "Assets" + temp.Substring(Application.dataPath.Length);
 
-                    T t = (T)AssetDatabase.LoadAssetAtPath(localPath, typeof(T));
-
-                    if (t != null)
-                    {
-                        al.Add(t);
-                        pl.Add(localPath);
-                    }
+                    paths.Add(localPath);
                 }
             }
 
@@ -985,8 +930,32 @@ public class AssetsChecker : EditorWindow
             Debug.LogWarning("AssetsChecker: " + path + " not start with Assets!");
         }
 
-        paths = pl.ToArray();
-        return al.ToArray();
+        return paths.ToArray();
     }
 
+    public static T LoadAssetFromUniqueAssetPath<T>(string aAssetPath) where T : UnityEngine.Object
+    {
+        if (aAssetPath.Contains("::"))
+        {
+            string[] parts = aAssetPath.Split(new string[] { "::" }, System.StringSplitOptions.RemoveEmptyEntries);
+            aAssetPath = parts[0];
+            if (parts.Length > 1)
+            {
+                string assetName = parts[1];
+                System.Type t = typeof(T);
+                var assets = AssetDatabase.LoadAllAssetsAtPath(aAssetPath)
+                    .Where(i => t.IsAssignableFrom(i.GetType())).Cast<T>();
+                var obj = assets.Where(i => i.name == assetName).FirstOrDefault();
+                if (obj == null)
+                {
+                    int id;
+                    if (int.TryParse(parts[1], out id))
+                        obj = assets.Where(i => i.GetInstanceID() == id).FirstOrDefault();
+                }
+                if (obj != null)
+                    return obj;
+            }
+        }
+        return AssetDatabase.LoadAssetAtPath<T>(aAssetPath);
+    }
 }
