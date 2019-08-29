@@ -437,7 +437,11 @@ public class AssetsChecker : EditorWindow
 
             case SortType.DependencySort:
                 AllTextures.Sort(delegate (TextureDetails details1, TextureDetails details2) { return details2.FoundInMaterials.Count - details1.FoundInMaterials.Count; });
+                AllMaterials.Sort(delegate (MaterialDetails details1, MaterialDetails details2) { return details2.FoundInGameObjects.Count - details1.FoundInGameObjects.Count; });
+                AllMeshes.Sort(delegate (MeshDetails details1, MeshDetails details2) { return details2.FoundInGameObjects.Count - details1.FoundInGameObjects.Count; });
                 AllShaders.Sort(delegate (ShaderDetails details1, ShaderDetails details2) { return details2.FoundInMaterials.Count - details1.FoundInMaterials.Count; });
+                AllSounds.Sort(delegate (SoundDetails details1, SoundDetails details2) { return details2.FoundInGameObjects.Count - details1.FoundInGameObjects.Count; });
+                AllScripts.Sort(delegate (ScriptDetails details1, ScriptDetails details2) { return details2.FoundInGameObjects.Count - details1.FoundInGameObjects.Count; });
                 break;
 
         }
@@ -700,7 +704,7 @@ public class AssetsChecker : EditorWindow
                 tMaterialDetails.name = material.name;
                 tMaterialDetails.path = path;
 
-                // 对于material的缩略图进行深拷贝
+                // 对于缩略图进行深拷贝
                 Texture2D preview = AssetPreview.GetAssetPreview(material);
                 tMaterialDetails.preview = new Texture2D(preview.width, preview.height);
                 tMaterialDetails.preview.SetPixels32(preview.GetPixels32());
