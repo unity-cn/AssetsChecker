@@ -323,7 +323,7 @@ public class AssetsChecker : EditorWindow
         // 显示添加需检查的文件夹的输入框和确认添加的按钮，并处理输入
 
         inputPath = EditorGUILayout.TextField(inputPath, GUILayout.Width(350), GUILayout.Height(30));
-        //if(GUILayout.Button(new GUIContent(iconHandDraw1, "Add to list"),  GUILayout.Width(30), GUILayout.Height(30))){
+
         if (GUILayout.Button(new GUIContent(iconPlus, "Add to list"), GUILayout.Width(30), GUILayout.Height(30)))
         {
             int check = 0;
@@ -350,7 +350,6 @@ public class AssetsChecker : EditorWindow
 
         // 显示清空检查列表的按钮，并处理输入
 
-        //if(GUILayout.Button(new GUIContent(iconHandDraw5, "Clear list"), GUILayout.Width(30), GUILayout.Height(30))){
         if (GUILayout.Button(new GUIContent(iconRefresh, "Clear list"), GUILayout.Width(30), GUILayout.Height(30)))
         {
             clearResources();
@@ -463,6 +462,20 @@ public class AssetsChecker : EditorWindow
                 Selection.activeObject = LoadAssetFromUniqueAssetPath<Material>(mat.path);
             }
 
+            Texture2D iconGameObjects = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
+            if (GUILayout.Button(new GUIContent(mat.FoundInGameObjects.Count.ToString(), iconGameObjects, "GameObjects"), GUILayout.Width(60), GUILayout.Height(50)))
+            {
+                List<Object> objects = new List<Object>();
+                Object obj = null;
+                foreach (string path in mat.FoundInGameObjects)
+                {
+                    obj = LoadAssetFromUniqueAssetPath<GameObject>(path);
+                    if (obj != null)
+                        objects.Add(obj);
+                }
+                Selection.objects = objects.ToArray();
+            }
+
             GUILayout.EndHorizontal();
         }
 
@@ -521,6 +534,21 @@ public class AssetsChecker : EditorWindow
             {
                 Selection.activeObject = LoadAssetFromUniqueAssetPath<Mesh>(mes.path);
             }
+
+            Texture2D iconGameObjects = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
+            if (GUILayout.Button(new GUIContent(mes.FoundInGameObjects.Count.ToString(), iconGameObjects, "GameObjects"), GUILayout.Width(60), GUILayout.Height(50)))
+            {
+                List<Object> objects = new List<Object>();
+                Object obj = null;
+                foreach (string path in mes.FoundInGameObjects)
+                {
+                    obj = LoadAssetFromUniqueAssetPath<GameObject>(path);
+                    if (obj != null)
+                        objects.Add(obj);
+                }
+                Selection.objects = objects.ToArray();
+            }
+
             GUILayout.Box(mes.vertexCount.ToString() + " vertices\n" + mes.triangles + " Traingles\n", GUILayout.Width(100), GUILayout.Height(50));
 
             GUILayout.EndHorizontal();
@@ -793,45 +821,112 @@ public class AssetsChecker : EditorWindow
             }
         }
 
-        // TODO: 目前FoundInGameObjects没有对所有类型使用
-        // TODO: 目前不会找到GameObject引用的自定义资源
+        // TODO: 优化查重算法
+        // TODO: 目前只能找到存为prefab的GameObject
+        // 找到GameObject引用的内建资源也能找到
 
         paths = GetFilePaths<GameObject>(inputPath, searchOption);
 
         foreach (string path in paths)
         {
-            foreach (string p in AssetDatabase.GetDependencies(path))
+            GameObject gameObject = (GameObject)AssetDatabase.LoadAssetAtPath(path, typeof(GameObject));
+            if (gameObject != null)
             {
-                AudioClip clip = (AudioClip)AssetDatabase.LoadAssetAtPath(p, typeof(AudioClip));
-                if (clip != null)
+                foreach (Object obj in EditorUtility.CollectDependencies(new UnityEngine.Object[] { gameObject }))
                 {
-                    int check = 1;
-                    foreach (SoundDetails details in AllSounds)
+                    string p = AssetDatabase.GetAssetPath(obj);
+                    if (p == defaultPath)
+                        p = defaultPath + "::" + obj.name;
+
+                    if (obj is Material)
                     {
-                        if (details.path == p)
+                        Material material = (Material)obj;
+                        int check = 1;
+                        foreach (MaterialDetails details in AllMaterials)
                         {
-                            check = 0;
-                            details.FoundInGameObjects.Add(path);
-                            break;
+                            if (details.path == p)
+                            {
+                                check = 0;
+                                details.FoundInGameObjects.Add(path);
+                                break;
+                            }
+                        }
+
+                        if (check == 1)
+                        {
+                            MaterialDetails tMaterialDetails = new MaterialDetails();
+                            tMaterialDetails.FoundInGameObjects = new List<string>();
+                            tMaterialDetails.name = material.name;
+                            tMaterialDetails.path = path;
+
+                            // 对于material的缩略图进行深拷贝
+                            Texture2D preview = AssetPreview.GetAssetPreview(material);
+                            tMaterialDetails.preview = new Texture2D(preview.width, preview.height);
+                            tMaterialDetails.preview.SetPixels32(preview.GetPixels32());
+                            tMaterialDetails.preview.Apply();
+
+                            tMaterialDetails.FoundInGameObjects.Add(path);
+                            AllMaterials.Add(tMaterialDetails);
                         }
                     }
 
-                    if (check == 1)
+                    else if (obj is Mesh)
                     {
-                        SoundDetails tSoundDetails = new SoundDetails();
-                        tSoundDetails.FoundInGameObjects = new List<string>();
-                        tSoundDetails.name = clip.name;
-                        tSoundDetails.path = p;
-                        tSoundDetails.preview = AssetPreview.GetAssetPreview(clip);
-                        tSoundDetails.FoundInGameObjects.Add(path);
-                        AllSounds.Add(tSoundDetails);
+                        Mesh mesh = (Mesh)obj;
+                        int check = 1;
+                        foreach (MeshDetails details in AllMeshes)
+                        {
+                            if (details.path == p)
+                            {
+                                check = 0;
+                                details.FoundInGameObjects.Add(path);
+                                break;
+                            }
+                        }
+
+                        if (check == 1)
+                        {
+                            MeshDetails tMeshDetails = new MeshDetails();
+                            tMeshDetails.FoundInGameObjects = new List<string>();
+                            tMeshDetails.name = mesh.name;
+                            tMeshDetails.path = path;
+                            tMeshDetails.preview = AssetPreview.GetAssetPreview(mesh);
+                            tMeshDetails.vertexCount = mesh.vertexCount;
+                            tMeshDetails.triangles = mesh.triangles.Length;
+                            tMeshDetails.FoundInGameObjects.Add(path);
+                            AllMeshes.Add(tMeshDetails);
+                        }
                     }
-                }
-                else
-                {
-                    MonoScript script = (MonoScript)AssetDatabase.LoadAssetAtPath(p, typeof(MonoScript));
-                    if (script != null)
+
+                    else if (obj is AudioClip)
                     {
+                        AudioClip clip = (AudioClip)obj;
+                        int check = 1;
+                        foreach (SoundDetails details in AllSounds)
+                        {
+                            if (details.path == p)
+                            {
+                                check = 0;
+                                details.FoundInGameObjects.Add(path);
+                                break;
+                            }
+                        }
+
+                        if (check == 1)
+                        {
+                            SoundDetails tSoundDetails = new SoundDetails();
+                            tSoundDetails.FoundInGameObjects = new List<string>();
+                            tSoundDetails.name = clip.name;
+                            tSoundDetails.path = p;
+                            tSoundDetails.preview = AssetPreview.GetAssetPreview(clip);
+                            tSoundDetails.FoundInGameObjects.Add(path);
+                            AllSounds.Add(tSoundDetails);
+                        }
+                    }
+
+                    else if (obj is MonoScript)
+                    {
+                        MonoScript script = (MonoScript)obj;
                         int check = 1;
                         foreach (ScriptDetails details in AllScripts)
                         {
@@ -852,6 +947,7 @@ public class AssetsChecker : EditorWindow
                             AllScripts.Add(tScriptDetails);
                         }
                     }
+
                 }
             }
         }
